@@ -1,0 +1,75 @@
+id: default
+version: 1
+
+dimensions:
+  - id: communication
+    name: Comunicação
+    description: >-
+      Clareza e objetividade das mensagens, ausência de redundância, tom e
+      empatia adequados ao contexto do cliente.
+    weight: 0.25
+    anchors:
+      "0": "Mensagens incompreensíveis ou tom claramente inadequado/desrespeitoso."
+      "1": "Comunicação muito confusa ou repetitiva; cliente provavelmente não entende."
+      "2": "Comunicação com falhas relevantes de clareza, redundância ou tom."
+      "3": "Comunicação adequada, com pequenas falhas de clareza ou concisão."
+      "4": "Comunicação clara, objetiva e com tom apropriado na maior parte."
+      "5": "Comunicação exemplar: clara, concisa, empática e bem ajustada ao contexto."
+  - id: contextual_understanding
+    name: Compreensão contextual
+    description: >-
+      Entende a necessidade do cliente, não repete perguntas já respondidas e
+      lida bem com mensagens fragmentadas, corrigidas ou fora de ordem.
+    weight: 0.25
+    anchors:
+      "0": "Ignora completamente o contexto; respostas desconexas do que o cliente diz."
+      "1": "Demonstra pouca compreensão; repete perguntas já respondidas de forma recorrente."
+      "2": "Compreensão parcial; perde contexto ou repete perguntas em vários momentos."
+      "3": "Compreende o essencial, com deslizes ocasionais de contexto."
+      "4": "Boa compreensão do contexto; raramente perde o fio da conversa."
+      "5": "Compreensão plena; acompanha correções, fragmentos e o histórico sem falhas."
+  - id: compliance_accuracy
+    name: Compliance e precisão
+    description: >-
+      Respeita regras de negócio (por exemplo, não informar preço diretamente e
+      encaminhar valores a um especialista), não inventa informações e trata
+      dados sensíveis de forma adequada.
+    weight: 0.25
+    anchors:
+      "0": "Viola regras de negócio de forma grave ou inventa informações relevantes."
+      "1": "Violações claras de regra de negócio ou imprecisões importantes."
+      "2": "Algumas violações ou imprecisões que afetam a confiabilidade."
+      "3": "Em geral segue as regras e é preciso, com deslizes menores."
+      "4": "Segue as regras de negócio e é preciso quase sempre."
+      "5": "Total aderência às regras, informação precisa e cuidado exemplar com dados sensíveis."
+  - id: resolution
+    name: Resolutividade
+    description: >-
+      Conduz a conversa em direção ao objetivo do cliente, com próximos passos
+      claros e sem loops improdutivos.
+    weight: 0.25
+    anchors:
+      "0": "Não avança em nada; conversa presa em loop ou abandonada."
+      "1": "Avanço mínimo; cliente termina sem direção clara."
+      "2": "Avanço parcial; objetivo do cliente fica majoritariamente sem resposta."
+      "3": "Encaminha o objetivo, mas com próximos passos pouco claros."
+      "4": "Conduz bem ao objetivo, com próximos passos em geral claros."
+      "5": "Resolve ou encaminha plenamente o objetivo, com próximos passos claros e sem loops."
+
+flags:
+  - id: hallucination
+    description: >-
+      O atendente afirma informações que não pode sustentar ou que não constam
+      do contexto (fatos, números, disponibilidade, promessas inventadas).
+  - id: sensitive_data_exposure
+    description: >-
+      Manejo inadequado de dados sensíveis do cliente (por exemplo, solicitar,
+      repetir ou expor dados pessoais sem necessidade ou cuidado).
+  - id: customer_frustration
+    description: >-
+      Sinais claros de frustração, irritação ou insatisfação do cliente ao
+      longo da conversa.
+  - id: business_rule_violation
+    description: >-
+      Violação de uma regra de negócio explícita (por exemplo, informar preço
+      diretamente quando a regra é encaminhar a um especialista).
