@@ -1,0 +1,19 @@
+node_modules/
+dist/
+coverage/
+
+# Environment and secrets
+.env
+.env.local
+
+# Local database (SQLite + WAL)
+*.db
+*.db-wal
+*.db-shm
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# Logs and temporary files
+*.log
+.DS_Store
