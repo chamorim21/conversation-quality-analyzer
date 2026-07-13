@@ -15,6 +15,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "js-tiktoken": "^1.0.21",
     "js-yaml": "^4.1.0",
     "pino": "^9.5.0",
     "zod": "^3.23.8"
