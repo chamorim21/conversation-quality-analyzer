@@ -170,10 +170,10 @@ Para cada uso relevante registramos três pontos:
     loop) das aceitáveis; a detecção de alucinação sutil é a principal lacuna e é
     tratada no documento de solução (escolha de modelo + dataset dourado).
 
-## Fase 10 — Entregáveis (AI_USAGE + documento de solução)
+## Fase 10 — Entregáveis (registro de uso de IA + documento de solução)
 
 - **Onde**: consolidação deste registro e escrita do documento de solução
-  (`docs/SOLUTION.md`).
+  (`docs/SOLUCAO.md`).
 - **Por quê**: produzir os dois entregáveis escritos do desafio (este log de uso
   de IA e o documento de solução) sem contradizer a implementação.
 - **Como foi validado**: as seções de viabilidade econômica e de comparação de

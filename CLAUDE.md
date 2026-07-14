@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Guidance for working in this repository. See `README.md` for the user-facing
-overview and `docs/SOLUTION.md` for design rationale and scale-out notes.
+overview and `docs/SOLUCAO.md` for design rationale and scale-out notes.
 
 ## What this is
 
@@ -31,11 +31,11 @@ Run a single test file: `npx vitest run tests/rubric/prompt.test.ts`.
 
 ## Conventions
 
-- **Language:** all code, comments, strings, tests, and repo infrastructure
-  (README, this file) are in **English**. The two challenge deliverables —
-  `docs/AI_USAGE.md` and `docs/SOLUTION.md` — are in **Portuguese** (their
-  audience is the challenge reviewer). Executive summaries produced *by the
-  judge* are also in Portuguese (product output, not source).
+- **Language:** all code, comments, strings, and tests are in **English** (plus
+  this file). All human-facing documents are in **Portuguese**: the README and
+  everything under `docs/` (`SOLUCAO.md`, `USO_DE_IA.md` — their audience is
+  the challenge reviewer). Executive summaries produced *by the judge* are also
+  in Portuguese (product output, not source).
 - **Message roles are `customer` and `attendant`** — never `agent`/`user`
   (avoids collision with "AI agent"). Any bot or human support rep is
   `attendant`. See `src/domain/conversation.ts`.
@@ -45,7 +45,7 @@ Run a single test file: `npx vitest run tests/rubric/prompt.test.ts`.
   response). Structural validation lives in the schema; semantic rules (e.g.
   evaluability) are separate checks that return readable errors.
 - Keep the mandatory scope **simple and effective**. Sophistication that isn't
-  needed to run goes into `docs/SOLUTION.md`, not into the code.
+  needed to run goes into `docs/SOLUCAO.md`, not into the code.
 
 ## Architecture (request flow)
 

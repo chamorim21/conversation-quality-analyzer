@@ -1,109 +1,111 @@
 # Conversation Quality Analyzer
 
-A Node.js/TypeScript API that evaluates the quality of customer-support
-conversations using an LLM as a judge (LLM-as-judge). It receives a
-conversation, applies deterministic preprocessing (normalization, PII masking,
-evaluability validation, and token-based truncation), evaluates it with a single
-OpenAI call using structured output derived from a **versioned YAML rubric**,
-aggregates the scores deterministically, and persists a full audit trail in
-SQLite.
+API em Node.js/TypeScript que avalia a qualidade de conversas de atendimento ao
+cliente usando um LLM como juiz (*LLM-as-judge*). Ela recebe uma conversa,
+aplica pré-processamento determinístico (normalização, mascaramento de PII,
+validação de avaliabilidade e truncamento por tokens), avalia com uma única
+chamada à OpenAI usando saída estruturada derivada de uma **rubrica YAML
+versionada**, agrega as notas de forma determinística e persiste a trilha de
+auditoria completa em SQLite.
 
-The rubric is the single source of truth: the prompt, the structured-output JSON
-Schema, and the weighted aggregation are all derived from it at runtime, so
-changing the evaluation criteria is a YAML edit — no code change.
+A rubrica é a única fonte da verdade: o prompt, o JSON Schema da saída
+estruturada e a agregação ponderada são todos derivados dela em tempo de
+execução — mudar os critérios de avaliação é uma edição de YAML, sem mudança de
+código.
 
-## Challenge deliverables
+## Entregáveis do desafio
 
-This repository is the functional prototype (deliverable 2). The written
-deliverables are in `docs/` (in Portuguese, as they address the challenge
-reviewer):
+Este repositório é o protótipo funcional (Entregável 2). Os entregáveis
+escritos estão em `docs/`:
 
-- [`docs/SOLUTION.md`](docs/SOLUTION.md) — solution document: overview, flow,
-  technical decisions, prompt/model/orchestration strategy, comparison of the
-  two architectural approaches, risks and next steps.
-- [`docs/AI_USAGE.md`](docs/AI_USAGE.md) — record of how AI assistants were
-  used during development and how their suggestions were validated.
+- [`docs/SOLUCAO.md`](docs/SOLUCAO.md) — documento de solução: visão geral,
+  fluxo, decisões técnicas, estratégia de prompts/modelos/orquestração,
+  comparação entre as duas abordagens arquiteturais, riscos e próximos passos.
+- [`docs/USO_DE_IA.md`](docs/USO_DE_IA.md) — registro de como assistentes de IA
+  foram usados no desenvolvimento e como as sugestões foram validadas.
 
-## What it does
+## O que a API faz
 
-- **Scores** each conversation on the rubric's dimensions (0–5 with descriptive
-  anchors), each with a justification and literal evidence quotes (by message
-  index), or `insufficient_data` when there isn't enough to judge.
-- **Overall score**: deterministic weighted average (dimensions marked
-  `insufficient_data` are dropped and the weights renormalized).
-- **Critical flags** (e.g. hallucination, sensitive-data exposure) with evidence.
-- **Executive summary** in Portuguese.
-- **Full audit trail**: original + masked conversation, rubric@version, rendered
-  prompt, raw LLM response, result, tokens/cost/latency, status — persisted for
-  every evaluation (success and failure).
-- **Observability**: `/metrics` (cost, tokens, latency p50/p95, score
-  distributions, flag counts) and `/health` (process + database liveness).
+- **Notas** por dimensão da rubrica (0–5 com âncoras descritivas), cada uma com
+  justificativa e evidências literais citadas da conversa (por índice de
+  mensagem), ou `insufficient_data` quando não há base para julgar.
+- **Nota geral**: média ponderada determinística (dimensões marcadas
+  `insufficient_data` saem da conta e os pesos são renormalizados).
+- **Flags críticas** (ex.: alucinação, exposição de dados sensíveis) com
+  evidência.
+- **Resumo executivo** em português.
+- **Trilha de auditoria completa**: conversa original + mascarada,
+  rubrica@versão, prompt renderizado, resposta bruta do LLM, resultado,
+  tokens/custo/latência, status — persistida para toda avaliação (sucesso e
+  falha).
+- **Observabilidade**: `/metrics` (custo, tokens, latência p50/p95,
+  distribuição de notas, contagem de flags) e `/health` (processo + banco).
 
 ## Pipeline
 
 ```
 POST /evaluations
-  → adapter (external format → canonical)
-  → normalization + PII masking
-  → evaluability check (→ 422)
-  → truncation (head+tail, original indices preserved)
-  → single-call LLM evaluation (structured output from the rubric, retry/backoff)
-  → deterministic aggregation
-  → audit persistence (SQLite)
-  → structured response
+  → adapter (formato externo → canônico)
+  → normalização + mascaramento de PII
+  → validação de avaliabilidade (→ 422)
+  → truncamento (início+fim, índices originais preservados)
+  → avaliação LLM em chamada única (saída estruturada da rubrica, retry/backoff)
+  → agregação determinística
+  → persistência da auditoria (SQLite)
+  → resposta estruturada
 ```
 
-## Requirements
+## Requisitos
 
-- Node.js >= 20 (developed and tested on Node 22)
-- An OpenAI API key — only for local runs and the demo. **The test suite runs
-  without a key** (it uses a mocked LLM client).
+- Node.js >= 20 (desenvolvido e testado no Node 22)
+- Uma chave de API da OpenAI — apenas para rodar localmente e para a demo.
+  **A suíte de testes roda sem chave** (usa um cliente LLM mockado).
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env   # then fill in OPENAI_API_KEY
+cp .env.example .env   # depois preencha OPENAI_API_KEY
 ```
 
-Environment variables (see `.env.example`):
+Variáveis de ambiente (ver `.env.example`):
 
-| Variable                  | Default                  | Description                                  |
+| Variável                  | Default                  | Descrição                                    |
 | ------------------------- | ------------------------ | -------------------------------------------- |
-| `OPENAI_API_KEY`          | — (required)             | OpenAI API key                               |
-| `DEFAULT_MODEL`           | `gpt-4o-mini`            | Default evaluation model                     |
-| `MAX_CONVERSATION_TOKENS` | `30000`                  | Token limit before truncation                |
-| `LLM_MAX_CONCURRENCY`     | `5`                      | Maximum concurrent LLM calls                 |
-| `PORT`                    | `3000`                   | HTTP port                                    |
-| `DB_PATH`                 | `./data/evaluations.db`  | Path to the SQLite audit file                |
-| `LOG_LEVEL`               | `info`                   | Log level (pino)                             |
+| `OPENAI_API_KEY`          | — (obrigatória)          | Chave de API da OpenAI                       |
+| `DEFAULT_MODEL`           | `gpt-4o-mini`            | Modelo padrão de avaliação                   |
+| `MAX_CONVERSATION_TOKENS` | `30000`                  | Limite de tokens antes do truncamento        |
+| `LLM_MAX_CONCURRENCY`     | `5`                      | Máximo de chamadas LLM simultâneas           |
+| `PORT`                    | `3000`                   | Porta HTTP                                   |
+| `DB_PATH`                 | `./data/evaluations.db`  | Caminho do arquivo SQLite de auditoria       |
+| `LOG_LEVEL`               | `info`                   | Nível de log (pino)                          |
 
-Configuration is validated at boot (fail-fast): a missing key or invalid value
-stops the process with a clear error.
+A configuração é validada no boot (*fail-fast*): chave ausente ou valor
+inválido derruba o processo com um erro claro.
 
-## Running locally
+## Rodando localmente
 
 ```bash
-npm run dev     # start the API in watch mode (tsx), loads .env automatically
+npm run dev     # sobe a API em watch mode (tsx), carrega o .env automaticamente
 ```
 
-The server logs `server listening` once it is up. It boots only when
-`OPENAI_API_KEY` is set.
+O servidor loga `server listening` quando está no ar. Ele só sobe com
+`OPENAI_API_KEY` configurada.
 
 ## API
 
-| Method & path        | Description                                            |
-| -------------------- | ----------------------------------------------------- |
-| `POST /evaluations`  | Evaluate one conversation, return the structured result |
-| `GET /health`        | Liveness (process + SQLite reachability)              |
-| `GET /metrics`       | Aggregated metrics over all persisted evaluations     |
+| Método e caminho     | Descrição                                                 |
+| -------------------- | --------------------------------------------------------- |
+| `POST /evaluations`  | Avalia uma conversa e retorna o resultado estruturado     |
+| `GET /health`        | Liveness (processo + acesso ao SQLite)                    |
+| `GET /metrics`       | Métricas agregadas de todas as avaliações persistidas     |
 
-### Example request
+### Exemplo de requisição
 
-`POST /evaluations` — the `conversation` is the canonical contract; `options` is
-optional. The request below is the `S_84b564f9` sample session **abridged to its
-opening two messages**; the response that follows is that session's real output,
-so its metadata reflects the full 24-message conversation.
+`POST /evaluations` — a `conversation` é o contrato canônico; `options` é
+opcional. A requisição abaixo é a sessão de exemplo `S_84b564f9` **resumida às
+duas mensagens de abertura**; a resposta a seguir é a saída real dessa sessão,
+então os metadados refletem a conversa completa de 24 mensagens.
 
 ```bash
 curl -s http://localhost:3000/evaluations \
@@ -121,7 +123,7 @@ curl -s http://localhost:3000/evaluations \
   }'
 ```
 
-### Example response (real output for `S_84b564f9`, justifications abridged)
+### Exemplo de resposta (saída real de `S_84b564f9`, justificativas resumidas)
 
 ```json
 {
@@ -160,122 +162,129 @@ curl -s http://localhost:3000/evaluations \
 }
 ```
 
-### Error responses
+### Respostas de erro
 
-| Status | When                                                              |
-| ------ | ---------------------------------------------------------------- |
-| `400`  | Malformed request / conversation fails the canonical schema      |
-| `404`  | Unknown rubric selector (the body lists the available rubrics)   |
-| `422`  | Conversation not evaluable (missing a customer/attendant message) |
-| `502`  | LLM failed after exhausting retries (the failure is still audited) |
-| `500`  | Internal error (e.g. the audit write failed — no 200 without audit) |
+| Status | Quando                                                                  |
+| ------ | ----------------------------------------------------------------------- |
+| `400`  | Requisição malformada / conversa fora do schema canônico                |
+| `404`  | Seletor de rubrica desconhecido (o corpo lista as rubricas disponíveis) |
+| `422`  | Conversa não avaliável (falta mensagem de cliente/atendente)            |
+| `502`  | LLM falhou após esgotar os retries (a falha ainda é auditada)           |
+| `500`  | Erro interno (ex.: falha na escrita da auditoria — sem 200 sem auditoria) |
 
-### Selecting the rubric and model
+### Selecionando rubrica e modelo
 
-- `options.rubric` — e.g. `"default"` (latest version) or `"default@1"` (pinned).
-  Unknown selectors return `404` with the list of available rubrics.
-- `options.model` — e.g. `"gpt-4o-mini"` (default) or `"gpt-4o"`. Falls back to
-  `DEFAULT_MODEL`.
+- `options.rubric` — ex.: `"default"` (versão mais recente) ou `"default@1"`
+  (versão pinada). Seletores desconhecidos retornam `404` com a lista de
+  rubricas disponíveis.
+- `options.model` — ex.: `"gpt-4o-mini"` (default) ou `"gpt-4o"`. Sem valor,
+  usa `DEFAULT_MODEL`.
 
-## Rubrics
+## Rubricas
 
-Rubrics live in `rubrics/*.yaml`, validated at boot (ids unique, weights sum to
-1.0, anchors 0–5 complete). Each defines `id`, `version`, `dimensions[]`
-(id, name, description, weight, anchors) and `flags[]`. To change the criteria,
-edit the YAML and bump the version — the prompt, schema, and aggregation follow
-automatically. Old evaluations remain interpretable because each audit row
-carries the `rubric@version` and prompt version that produced it.
+As rubricas vivem em `rubrics/*.yaml`, validadas no boot (ids únicos, pesos
+somando 1.0, âncoras 0–5 completas). Cada uma define `id`, `version`,
+`dimensions[]` (id, nome, descrição, peso, âncoras) e `flags[]`. Para mudar os
+critérios, edite o YAML e incremente a versão — o prompt, o schema e a
+agregação acompanham automaticamente. Avaliações antigas permanecem
+interpretáveis porque cada linha de auditoria carrega a rubrica@versão e a
+versão de prompt que a produziram.
 
 ## Demo
 
-Evaluates conversations from `data/examples.json` against a **running** API
-(real OpenAI). Start the server in one terminal, then run the demo in another:
+Avalia conversas de `data/examples.json` contra uma API **no ar** (OpenAI
+real). Suba o servidor em um terminal e rode a demo em outro:
 
 ```bash
 npm run dev                                   # terminal 1
 
-npm run demo -- --session S_84b564f9          # terminal 2: one session
-npm run demo                                  # all conversations
+npm run demo -- --session S_84b564f9          # terminal 2: uma sessão
+npm run demo                                  # todas as conversas
 npm run demo -- --session S_84b564f9 --session S_5ee36f40
 npm run demo -- --rubric default@1 --model gpt-4o
 ```
 
-For each conversation it prints the per-dimension scores, overall score,
-triggered flags, cost, latency and token usage, plus a run summary.
+Para cada conversa a demo imprime as notas por dimensão, a nota geral, as
+flags disparadas, custo, latência e uso de tokens, além de um resumo da
+execução.
 
-Suggested sanity cases from the sample dataset:
+Casos de sanidade sugeridos do dataset de exemplo:
 
-- `S_84b564f9` — possible hallucination ("most popular course")
-- `S_5ee36f40` — loop / loss of context
-- `S_213f6505` — CPF collection (PII)
-- `S_68c0d237` — honesty about a professor not found
+- `S_84b564f9` — possível alucinação ("curso mais procurado")
+- `S_5ee36f40` — loop / perda de contexto
+- `S_213f6505` — coleta de CPF (PII)
+- `S_68c0d237` — honestidade sobre professor não encontrado
 
 ## Docker
 
-The image is multi-stage: the build stage compiles TypeScript and the native
-`better-sqlite3` addon; the slim runtime stage reuses the compiled modules.
+A imagem é multi-stage: o estágio de build compila o TypeScript e o addon
+nativo `better-sqlite3`; o estágio de runtime slim reutiliza os módulos
+compilados.
 
 ```bash
 docker build -t conversation-quality-analyzer .
 
 docker run --rm -p 3000:3000 \
-  -e OPENAI_API_KEY=sk-your-key \
+  -e OPENAI_API_KEY=sk-sua-chave \
   conversation-quality-analyzer
 ```
 
-To persist the audit database across runs, mount a volume at `/app/data`:
+Para persistir o banco de auditoria entre execuções, monte um volume em
+`/app/data`:
 
 ```bash
 docker run --rm -p 3000:3000 \
-  -e OPENAI_API_KEY=sk-your-key \
+  -e OPENAI_API_KEY=sk-sua-chave \
   -v "$(pwd)/data:/app/data" \
   conversation-quality-analyzer
 ```
 
-## Testing
+## Testes
 
 ```bash
-npm test        # run the full suite (vitest) — no API key required
+npm test        # roda a suíte completa (vitest) — sem chave de API
 ```
 
-The suite covers preprocessing, the rubric subsystem, adapters, the LLM
-layer/orchestrator/aggregation, and the API end to end (using a mocked LLM
-client), including audit persistence and metrics.
+A suíte cobre o pré-processamento, o subsistema de rubrica, os adapters, a
+camada de LLM/orquestrador/agregação e a API de ponta a ponta (com cliente LLM
+mockado), incluindo a persistência da auditoria e as métricas.
 
 ## Scripts
 
 ```bash
-npm run dev     # start the API in watch mode (tsx), loads .env
-npm run build   # compile TypeScript to dist/
-npm start       # run the compiled build
-npm test        # run the test suite (no API key needed)
-npm run demo    # evaluate sample conversations against a running API
+npm run dev     # sobe a API em watch mode (tsx), carrega o .env
+npm run build   # compila o TypeScript para dist/
+npm start       # roda o build compilado
+npm test        # roda a suíte de testes (sem chave de API)
+npm run demo    # avalia conversas de exemplo contra uma API no ar
 ```
 
-## Project structure
+## Estrutura do projeto
 
 ```
 src/
-  api/            Fastify server, routes (evaluations, health, metrics), error mapping
-  adapters/       external format → canonical conversation
-  preprocessing/  normalization, PII masking, evaluability, truncation
-  rubric/         YAML schema/loader, prompt + JSON Schema generation
-  evaluation/     LLM client (retry/backoff), single-call orchestrator, aggregation
-  persistence/    SQLite (WAL) + migrations, audit repository
-  observability/  logger, cost, metrics
-  config/         env validation, pricing table
-rubrics/          versioned YAML rubrics
-data/             sample conversations (demo/tests fixture)
-scripts/          demo script
+  api/            servidor Fastify, rotas (evaluations, health, metrics), mapeamento de erros
+  adapters/       formato externo → conversa canônica
+  preprocessing/  normalização, mascaramento de PII, avaliabilidade, truncamento
+  rubric/         schema/loader do YAML, geração de prompt + JSON Schema
+  evaluation/     cliente LLM (retry/backoff), orquestrador single-call, agregação
+  persistence/    SQLite (WAL) + migrations, repositório de auditoria
+  observability/  logger, custo, métricas
+  config/         validação de env, tabela de preços
+rubrics/          rubricas YAML versionadas
+data/             conversas de exemplo (fixture da demo e dos testes)
+scripts/          script de demo
 ```
 
-## Notes and limitations
+## Notas e limitações
 
-- **No authentication** and **synchronous** evaluation by design (prototype). The
-  scale-out path (queue + workers + Postgres, auth, rate limiting) is documented
-  in the solution document.
-- PII masking is regex-based (best-effort); NER is a documented improvement.
-- The original (unmasked) conversation is stored only in the local SQLite audit
-  trail; only the masked conversation is sent to OpenAI.
-- A second, more sophisticated architecture (multi-agent, multi-call) is analyzed
-  in the solution document but deliberately not implemented (time-box).
+- **Sem autenticação** e avaliação **síncrona** por decisão de projeto
+  (protótipo). O caminho de escala (fila + workers + Postgres, autenticação,
+  rate limiting) está documentado no documento de solução.
+- O mascaramento de PII é por regex (melhor-esforço); NER é a evolução
+  documentada.
+- A conversa original (sem máscara) fica apenas na trilha de auditoria local em
+  SQLite; somente a versão mascarada é enviada à OpenAI.
+- Uma segunda arquitetura, mais sofisticada (multi-agente, multi-chamadas), é
+  analisada no documento de solução, mas deliberadamente não implementada
+  (time-box).

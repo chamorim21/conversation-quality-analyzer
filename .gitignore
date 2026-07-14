@@ -18,5 +18,5 @@ data/*.db-shm
 *.log
 .DS_Store
 
-# Generated PDFs (e.g. docs/SOLUTION.pdf)
+# PDFs (generated exports and the challenge statement, e.g. docs/SOLUCAO.pdf)
 *.pdf
