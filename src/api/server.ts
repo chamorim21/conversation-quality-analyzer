@@ -4,17 +4,20 @@ import { ZodError } from 'zod';
 import type { AppConfig } from '../config/env.js';
 import { LlmError, type LlmClient } from '../evaluation/llm-client.js';
 import { NotEvaluableError } from '../preprocessing/evaluability.js';
+import type { EvaluationRepository } from '../persistence/repository.js';
 import { RubricNotFoundError, type RubricRegistry } from '../rubric/loader.js';
 import { logger } from '../observability/logger.js';
 import { registerEvaluationsRoute } from './routes/evaluations.js';
 import { registerHealthRoute } from './routes/health.js';
 
 /** Everything the HTTP layer needs, injected so tests can supply a
- * {@link MockLlmClient} and a test rubric registry without an API key. */
+ * {@link MockLlmClient}, a test rubric registry, and a temp-DB repository
+ * without an API key. */
 export interface ServerDeps {
   config: AppConfig;
   rubrics: RubricRegistry;
   llmClient: LlmClient;
+  repository: EvaluationRepository;
 }
 
 const CORRELATION_ID_HEADER = 'x-correlation-id';

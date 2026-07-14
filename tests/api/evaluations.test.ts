@@ -1,5 +1,9 @@
-import { afterEach, describe, it, expect } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 import type { FastifyInstance } from 'fastify';
+import type { Database } from 'better-sqlite3';
 import type { AppConfig } from '../../src/config/env.js';
 import { loadRubrics } from '../../src/rubric/loader.js';
 import {
@@ -7,6 +11,11 @@ import {
   MockLlmClient,
   type StructuredRequest,
 } from '../../src/evaluation/llm-client.js';
+import { openDatabase } from '../../src/persistence/db.js';
+import {
+  createEvaluationRepository,
+  type EvaluationRepository,
+} from '../../src/persistence/repository.js';
 import { buildServer } from '../../src/api/server.js';
 
 const config: AppConfig = {
@@ -59,6 +68,9 @@ const validConversation = {
 };
 
 let app: FastifyInstance | undefined;
+let dir: string;
+let db: Database;
+let repo: EvaluationRepository;
 
 function defaultMock(): MockLlmClient {
   return new MockLlmClient((req) => ({
@@ -68,14 +80,26 @@ function defaultMock(): MockLlmClient {
   }));
 }
 
-function makeApp(llmClient = defaultMock(), cfg: AppConfig = config): FastifyInstance {
-  app = buildServer({ config: cfg, rubrics, llmClient });
+function makeApp(
+  llmClient = defaultMock(),
+  cfg: AppConfig = config,
+  repository: EvaluationRepository = repo,
+): FastifyInstance {
+  app = buildServer({ config: cfg, rubrics, llmClient, repository });
   return app;
 }
+
+beforeEach(() => {
+  dir = mkdtempSync(join(tmpdir(), 'cqa-api-'));
+  db = openDatabase(join(dir, 'test.db'));
+  repo = createEvaluationRepository(db);
+});
 
 afterEach(async () => {
   await app?.close();
   app = undefined;
+  db.close();
+  rmSync(dir, { recursive: true, force: true });
 });
 
 describe('POST /evaluations', () => {
@@ -112,6 +136,45 @@ describe('POST /evaluations', () => {
     expect(body.metadata.costUsd).toBeGreaterThan(0);
     expect(body.metadata.latencyMs).toBeGreaterThanOrEqual(0);
     expect(body.metadata.evaluationId).toBe(body.evaluationId);
+  });
+
+  it('persists a complete success audit row (R8)', async () => {
+    const response = await makeApp().inject({
+      method: 'POST',
+      url: '/evaluations',
+      headers: { 'x-correlation-id': 'corr-abc' },
+      payload: { conversation: validConversation },
+    });
+    expect(response.statusCode).toBe(200);
+    const { evaluationId } = response.json();
+
+    const record = repo.findById(evaluationId);
+    expect(record).toBeDefined();
+    expect(record).toMatchObject({
+      id: evaluationId,
+      sessionId: 'S_1',
+      status: 'success',
+      rubricId: 'default',
+      rubricVersion: 1,
+      promptVersion: 'v1',
+      model: 'gpt-4o-mini',
+      tokensIn: 100,
+      tokensOut: 20,
+      retries: 0,
+      truncated: false,
+      errorMessage: null,
+      correlationId: 'corr-abc',
+    });
+    expect(record?.costUsd).toBeGreaterThan(0);
+    // Full audit payload: original and masked conversations, prompt, raw response, result.
+    expect(record?.originalConversation).toEqual(validConversation);
+    expect(record?.maskedConversation).toMatchObject({ sessionId: 'S_1' });
+    expect(record?.renderedPrompt).toMatchObject({
+      system: expect.any(String),
+      user: expect.any(String),
+    });
+    expect(record?.rawLlmResponse).toMatchObject({ summary: 'Atendimento adequado.' });
+    expect(record?.result).toMatchObject({ overallScore: 4 });
   });
 
   it('echoes a correlation id header', async () => {
@@ -223,7 +286,7 @@ describe('POST /evaluations', () => {
     expect(response.json().error).toMatch(/attendant/i);
   });
 
-  it('returns 502 when the LLM fails after exhausting retries', async () => {
+  it('returns 502 and audits the failure when the LLM exhausts retries', async () => {
     const failing = new MockLlmClient(() => {
       throw new LlmRequestError(3, new Error('rate limit'));
     });
@@ -234,6 +297,59 @@ describe('POST /evaluations', () => {
     });
     expect(response.statusCode).toBe(502);
     expect(response.json().error).toBe('LLM evaluation failed');
+
+    // A failure audit row must exist, with the error and retry count recorded
+    // and no result.
+    const rows = db
+      .prepare('SELECT status, error_message, result, rendered_prompt, retries FROM evaluations')
+      .all() as Array<{
+      status: string;
+      error_message: string | null;
+      result: string | null;
+      rendered_prompt: string | null;
+      retries: number;
+    }>;
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe('error');
+    expect(rows[0].error_message).toContain('LLM request failed');
+    expect(rows[0].result).toBeNull();
+    expect(rows[0].rendered_prompt).not.toBeNull();
+    expect(rows[0].retries).toBe(2); // 3 attempts → 2 retries
+  });
+
+  it('does not write an audit row for a pre-LLM error (422)', async () => {
+    const response = await makeApp().inject({
+      method: 'POST',
+      url: '/evaluations',
+      payload: {
+        conversation: {
+          messages: [
+            { role: 'customer', content: 'oi' },
+            { role: 'customer', content: 'tem alguém?' },
+          ],
+        },
+      },
+    });
+    expect(response.statusCode).toBe(422);
+    const count = db.prepare('SELECT COUNT(*) AS n FROM evaluations').get() as { n: number };
+    expect(count.n).toBe(0);
+  });
+
+  it('returns 500 and does not answer 200 when the audit write fails', async () => {
+    const brokenRepo: EvaluationRepository = {
+      save() {
+        throw new Error('disk full');
+      },
+      findById() {
+        return undefined;
+      },
+    };
+    const response = await makeApp(defaultMock(), config, brokenRepo).inject({
+      method: 'POST',
+      url: '/evaluations',
+      payload: { conversation: validConversation },
+    });
+    expect(response.statusCode).toBe(500);
   });
 });
 

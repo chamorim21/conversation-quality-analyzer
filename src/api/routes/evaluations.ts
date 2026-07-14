@@ -2,13 +2,16 @@ import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { adaptCanonicalConversation } from '../../adapters/canonical.js';
-import { getPricing } from '../../config/pricing.js';
 import type { EvaluationMetadata } from '../../domain/evaluation.js';
+import { LlmError, LlmRequestError, LlmSchemaError } from '../../evaluation/llm-client.js';
 import { evaluateConversation } from '../../evaluation/orchestrator.js';
+import { estimateCost } from '../../observability/cost.js';
+import type { EvaluationRecord } from '../../persistence/repository.js';
 import { assertEvaluable } from '../../preprocessing/evaluability.js';
 import { maskConversation } from '../../preprocessing/pii.js';
 import { normalizeConversation } from '../../preprocessing/normalize.js';
 import { truncateConversation } from '../../preprocessing/truncate.js';
+import { PROMPT_VERSION, renderPrompt } from '../../rubric/prompt.js';
 import type { ServerDeps } from '../server.js';
 
 /** Selector used when the request does not pin a rubric: the latest version of
@@ -30,24 +33,21 @@ const EvaluateRequestSchema = z.object({
     .optional(),
 });
 
-/** Estimated USD cost from token usage and the pricing table. Returns 0 for a
- * model with no known price rather than guessing. */
-function estimateCost(model: string, tokensIn: number, tokensOut: number): number {
-  const pricing = getPricing(model);
-  if (!pricing) return 0;
-  return tokensIn * pricing.inputPerToken + tokensOut * pricing.outputPerToken;
-}
-
 /**
  * `POST /evaluations` — runs the full pipeline for one conversation: canonical
- * adapter → normalization → PII masking → evaluability check → single-call LLM
- * evaluation → deterministic aggregation, and returns the structured result
- * (R7). Persistence and truncation surfacing arrive in later tasks; domain
- * errors are turned into 400/404/422/502 by the server's error handler.
+ * adapter → normalization → PII masking → evaluability check → truncation →
+ * single-call LLM evaluation → deterministic aggregation, returns the structured
+ * result (R7) and persists a complete audit row (R8). Auditing is on the
+ * critical path: a successful evaluation is never returned without its row, and
+ * an LLM failure is also recorded before the 502 is surfaced. A DB write failure
+ * propagates as a 500. Client/domain errors (400/404/422) short-circuit before
+ * the LLM stage and produce no audit row.
  */
 export function registerEvaluationsRoute(app: FastifyInstance, deps: ServerDeps): void {
   app.post('/evaluations', async (request, reply) => {
     const startedAt = Date.now();
+    const evaluationId = randomUUID();
+    const createdAt = new Date().toISOString();
 
     const parsed = EvaluateRequestSchema.parse(request.body);
     const conversation = adaptCanonicalConversation(parsed.conversation);
@@ -60,37 +60,96 @@ export function registerEvaluationsRoute(app: FastifyInstance, deps: ServerDeps)
       maxTokens: deps.config.MAX_CONVERSATION_TOKENS,
     });
 
-    const output = await evaluateConversation({
-      client: deps.llmClient,
-      rubric,
-      conversation: prepared,
-      model,
-    });
-
-    const metadata: EvaluationMetadata = {
-      evaluationId: randomUUID(),
+    // Audit fields known before the LLM call — persisted on both paths. Both the
+    // original and masked conversations are kept (R3/R8).
+    const auditBase = {
+      id: evaluationId,
+      ...(conversation.sessionId !== undefined ? { sessionId: conversation.sessionId } : {}),
+      createdAt,
       rubricId: rubric.id,
       rubricVersion: rubric.version,
-      promptVersion: output.promptVersion,
+      promptVersion: PROMPT_VERSION,
       model,
-      tokensIn: output.tokensIn,
-      tokensOut: output.tokensOut,
-      costUsd: estimateCost(model, output.tokensIn, output.tokensOut),
-      latencyMs: Date.now() - startedAt,
       truncated: prepared.truncated,
-      ...(prepared.omittedMessageCount > 0
-        ? { omittedMessageCount: prepared.omittedMessageCount }
-        : {}),
-      createdAt: new Date().toISOString(),
-    };
+      correlationId: request.correlationId,
+      originalConversation: conversation,
+      maskedConversation: masked,
+    } satisfies Partial<EvaluationRecord>;
 
-    reply.status(200).send({
-      evaluationId: metadata.evaluationId,
-      dimensions: output.result.dimensions,
-      overallScore: output.result.overallScore,
-      flags: output.result.flags,
-      summary: output.result.summary,
-      metadata,
-    });
+    try {
+      const output = await evaluateConversation({
+        client: deps.llmClient,
+        rubric,
+        conversation: prepared,
+        model,
+      });
+
+      const costUsd = estimateCost(model, output.tokensIn, output.tokensOut);
+      const latencyMs = Date.now() - startedAt;
+
+      const record: EvaluationRecord = {
+        ...auditBase,
+        status: 'success',
+        tokensIn: output.tokensIn,
+        tokensOut: output.tokensOut,
+        costUsd,
+        latencyMs,
+        retries: output.retries,
+        errorMessage: null,
+        renderedPrompt: output.renderedPrompt,
+        rawLlmResponse: output.rawResponse,
+        result: output.result,
+      };
+      deps.repository.save(record); // DB write failure → propagates → 500
+
+      const metadata: EvaluationMetadata = {
+        evaluationId,
+        rubricId: rubric.id,
+        rubricVersion: rubric.version,
+        promptVersion: output.promptVersion,
+        model,
+        tokensIn: output.tokensIn,
+        tokensOut: output.tokensOut,
+        costUsd,
+        latencyMs,
+        truncated: prepared.truncated,
+        ...(prepared.omittedMessageCount > 0
+          ? { omittedMessageCount: prepared.omittedMessageCount }
+          : {}),
+        createdAt,
+      };
+
+      reply.status(200).send({
+        evaluationId,
+        dimensions: output.result.dimensions,
+        overallScore: output.result.overallScore,
+        flags: output.result.flags,
+        summary: output.result.summary,
+        metadata,
+      });
+    } catch (error) {
+      // Record LLM failures too (R8), then let the error handler map to 502.
+      if (error instanceof LlmError) {
+        const rendered = renderPrompt(rubric, prepared);
+        // Token usage is unknown on a failed call, but the retry count is
+        // recoverable when the retries were exhausted (R8 audit fidelity).
+        const retries = error instanceof LlmRequestError ? error.attempts - 1 : 0;
+        const record: EvaluationRecord = {
+          ...auditBase,
+          status: 'error',
+          tokensIn: 0,
+          tokensOut: 0,
+          costUsd: 0,
+          latencyMs: Date.now() - startedAt,
+          retries,
+          errorMessage: error.message,
+          renderedPrompt: { system: rendered.system, user: rendered.user },
+          rawLlmResponse: error instanceof LlmSchemaError ? error.lastRaw : null,
+          result: null,
+        };
+        deps.repository.save(record); // DB write failure → propagates → 500
+      }
+      throw error;
+    }
   });
 }
