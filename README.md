@@ -1,5 +1,8 @@
 # Conversation Quality Analyzer
 
+> Resolução do desafio técnico para a vaga de Engenheiro(a) de Inteligência
+> Artificial da **+A Educação**.
+
 API em Node.js/TypeScript que avalia a qualidade de conversas de atendimento
 (chat/WhatsApp) usando um LLM como juiz, guiado por uma rubrica YAML versionada.
 Recebe uma conversa e retorna notas por dimensão (0–5) com justificativas e
