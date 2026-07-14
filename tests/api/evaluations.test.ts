@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import type { Database } from 'better-sqlite3';
+import { pino } from 'pino';
 import type { AppConfig } from '../../src/config/env.js';
 import { loadRubrics } from '../../src/rubric/loader.js';
 import {
@@ -80,12 +81,14 @@ function defaultMock(): MockLlmClient {
   }));
 }
 
+const silentLogger = pino({ level: 'silent' });
+
 function makeApp(
   llmClient = defaultMock(),
   cfg: AppConfig = config,
   repository: EvaluationRepository = repo,
 ): FastifyInstance {
-  app = buildServer({ config: cfg, rubrics, llmClient, repository });
+  app = buildServer({ config: cfg, rubrics, llmClient, repository, logger: silentLogger });
   return app;
 }
 

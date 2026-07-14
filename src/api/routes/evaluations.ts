@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
+import type { Logger } from 'pino';
 import { z } from 'zod';
 import { adaptCanonicalConversation } from '../../adapters/canonical.js';
 import type { EvaluationMetadata } from '../../domain/evaluation.js';
@@ -43,16 +44,27 @@ const EvaluateRequestSchema = z.object({
  * propagates as a 500. Client/domain errors (400/404/422) short-circuit before
  * the LLM stage and produce no audit row.
  */
-export function registerEvaluationsRoute(app: FastifyInstance, deps: ServerDeps): void {
+export function registerEvaluationsRoute(
+  app: FastifyInstance,
+  deps: ServerDeps,
+  rootLogger: Logger,
+): void {
   app.post('/evaluations', async (request, reply) => {
     const startedAt = Date.now();
     const evaluationId = randomUUID();
     const createdAt = new Date().toISOString();
+    // One correlation-scoped logger threads the same id through every stage of
+    // this evaluation's logs (request → LLM → persistence), R10.
+    const log = rootLogger.child({ correlationId: request.correlationId, evaluationId });
 
     const parsed = EvaluateRequestSchema.parse(request.body);
     const conversation = adaptCanonicalConversation(parsed.conversation);
     const rubric = deps.rubrics.get(parsed.options?.rubric ?? DEFAULT_RUBRIC_SELECTOR);
     const model = parsed.options?.model ?? deps.config.DEFAULT_MODEL;
+    log.info(
+      { stage: 'request', rubric: `${rubric.id}@${rubric.version}`, model },
+      'evaluation received',
+    );
 
     const masked = maskConversation(normalizeConversation(conversation));
     assertEvaluable(masked);
@@ -86,6 +98,17 @@ export function registerEvaluationsRoute(app: FastifyInstance, deps: ServerDeps)
 
       const costUsd = estimateCost(model, output.tokensIn, output.tokensOut);
       const latencyMs = Date.now() - startedAt;
+      log.info(
+        {
+          stage: 'llm',
+          model,
+          tokensIn: output.tokensIn,
+          tokensOut: output.tokensOut,
+          retries: output.retries,
+          latencyMs,
+        },
+        'llm evaluation completed',
+      );
 
       const record: EvaluationRecord = {
         ...auditBase,
@@ -101,6 +124,7 @@ export function registerEvaluationsRoute(app: FastifyInstance, deps: ServerDeps)
         result: output.result,
       };
       deps.repository.save(record); // DB write failure → propagates → 500
+      log.info({ stage: 'persistence', status: 'success' }, 'evaluation persisted');
 
       const metadata: EvaluationMetadata = {
         evaluationId,
@@ -130,6 +154,7 @@ export function registerEvaluationsRoute(app: FastifyInstance, deps: ServerDeps)
     } catch (error) {
       // Record LLM failures too (R8), then let the error handler map to 502.
       if (error instanceof LlmError) {
+        log.warn({ stage: 'llm', error: error.message }, 'llm evaluation failed');
         const rendered = renderPrompt(rubric, prepared);
         // Token usage is unknown on a failed call, but the retry count is
         // recoverable when the retries were exhausted (R8 audit fidelity).
@@ -148,6 +173,7 @@ export function registerEvaluationsRoute(app: FastifyInstance, deps: ServerDeps)
           result: null,
         };
         deps.repository.save(record); // DB write failure → propagates → 500
+        log.info({ stage: 'persistence', status: 'error' }, 'failure audited');
       }
       throw error;
     }

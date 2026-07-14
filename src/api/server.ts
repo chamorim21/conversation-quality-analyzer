@@ -1,23 +1,27 @@
 import { randomUUID } from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
+import type { Logger } from 'pino';
 import { ZodError } from 'zod';
 import type { AppConfig } from '../config/env.js';
 import { LlmError, type LlmClient } from '../evaluation/llm-client.js';
 import { NotEvaluableError } from '../preprocessing/evaluability.js';
 import type { EvaluationRepository } from '../persistence/repository.js';
 import { RubricNotFoundError, type RubricRegistry } from '../rubric/loader.js';
-import { logger } from '../observability/logger.js';
+import { logger as defaultLogger } from '../observability/logger.js';
 import { registerEvaluationsRoute } from './routes/evaluations.js';
 import { registerHealthRoute } from './routes/health.js';
+import { registerMetricsRoute } from './routes/metrics.js';
 
 /** Everything the HTTP layer needs, injected so tests can supply a
- * {@link MockLlmClient}, a test rubric registry, and a temp-DB repository
- * without an API key. */
+ * {@link MockLlmClient}, a test rubric registry, a temp-DB repository, and a
+ * capturing logger without an API key. */
 export interface ServerDeps {
   config: AppConfig;
   rubrics: RubricRegistry;
   llmClient: LlmClient;
   repository: EvaluationRepository;
+  /** Root logger; defaults to the shared structured logger. */
+  logger?: Logger;
 }
 
 const CORRELATION_ID_HEADER = 'x-correlation-id';
@@ -37,6 +41,7 @@ declare module 'fastify' {
  */
 export function buildServer(deps: ServerDeps): FastifyInstance {
   const app = Fastify({ logger: false });
+  const rootLogger = deps.logger ?? defaultLogger;
 
   // Correlation ID per request (R10): reuse an incoming id or mint one, and
   // echo it back so a caller can correlate its request with the audit trail.
@@ -49,7 +54,7 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
   });
 
   app.setErrorHandler((error, request, reply) => {
-    const log = logger.child({ correlationId: request.correlationId });
+    const log = rootLogger.child({ correlationId: request.correlationId });
 
     // Invalid input: Zod validation of the request body (R1) → 400.
     if (error instanceof ZodError) {
@@ -83,8 +88,9 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
     reply.status(500).send({ error: 'Internal server error' });
   });
 
-  registerHealthRoute(app);
-  registerEvaluationsRoute(app, deps);
+  registerHealthRoute(app, deps, rootLogger);
+  registerMetricsRoute(app, deps);
+  registerEvaluationsRoute(app, deps, rootLogger);
 
   return app;
 }
