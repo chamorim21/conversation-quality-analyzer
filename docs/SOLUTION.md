@@ -111,6 +111,16 @@ versão; **zero mudança de código**.
   (Comunicação, Compreensão contextual, Compliance e precisão, Resolutividade),
   cada uma com peso `0.25` e âncoras 0–5, e 4 flags. O loader valida no boot que
   os pesos somam 1.0, que os ids são únicos e que as âncoras estão completas.
+- **Versionamento de rubrica em ação (`default@2`).** A rubrica evolui por
+  versão, não por edição destrutiva: `default.v1.yaml` e `default.v2.yaml`
+  coexistem sob o mesmo `id: default`. Uma requisição sem `options.rubric` resolve
+  para a **maior versão** (`'default'` → `default@2`); um seletor pinado
+  (`default@1`) reproduz a versão exata. Como cada linha de auditoria grava
+  `rubric@versão`, avaliações antigas continuam interpretáveis após a rubrica
+  mudar. A `default@2` recalibra as âncoras da v1 (baseline em **3**; **4–5**
+  exigem evidência positiva de qualidade; **0–2** com gatilhos concretos) para
+  corrigir a inflação observada abaixo — tudo por edição de YAML, **sem tocar em
+  código**.
 - **Pré-processamento determinístico e barato antes do LLM.** Rejeitar cedo
   (`422`) e mascarar PII **antes** de qualquer envio a terceiros são decisões de
   economia e de privacidade. O truncamento preserva os índices originais para que
@@ -166,7 +176,7 @@ versão; **zero mudança de código**.
   | Custo médio por avaliação | **US$ 0,00083** (~US$ 0,0008) |
   | Tokens (média in → out) | ~2.868 → ~667 |
   | Latência p50 / p95 | **11,2 s / 17,2 s** |
-  | Distribuição de notas (default@1) | Comunicação/Contexto/Resolutividade média 3,5; Compliance 4 |
+  | Distribuição de notas (**default@1**) | Comunicação/Contexto/Resolutividade média 3,5; Compliance 4 |
   | Flags disparadas | `customer_frustration` (1 — o caso de loop) |
 
 - **Observação de calibração (real).** No caso `S_84b564f9` (possível alucinação
@@ -176,6 +186,12 @@ versão; **zero mudança de código**.
   `customer_frustration`. Conclusão prática: para detecção de nuance, `gpt-4o` (ou
   um dataset dourado que calibre o modelo menor) é o caminho — sem alterar
   arquitetura, apenas configuração.
+- **Primeiro passo de calibração já entregue (`default@2`).** A tendência do juiz
+  a colapsar as notas em ~3,5/4 (premiando a *ausência* de defeito) é atacada na
+  v2 reescrevendo as âncoras: **3** vira a linha de base do atendente competente,
+  **4–5** passam a exigir evidência positiva e **0–2** ganham gatilhos concretos.
+  É calibração via rubrica versionada, complementar — não substituta — do dataset
+  dourado, e não exige trocar de modelo.
 
 ---
 
@@ -313,8 +329,9 @@ dourado.
 ### Riscos e limitações assumidas
 
 - **Consistência do LLM-as-judge.** Notas podem variar entre execuções. Mitigação:
-  temperatura baixa, âncoras descritivas e escala curta (0–5); a calibração real
-  exige o dataset dourado (futuro).
+  temperatura baixa, âncoras descritivas e escala curta (0–5); a recalibração de
+  âncoras (`default@2`) já reduz a inflação, e a calibração plena exige o dataset
+  dourado (futuro).
 - **Nuance no `gpt-4o-mini`.** Como observado, alucinação sutil pode não ser
   sinalizada. Mitigação: `gpt-4o` por configuração e/ou dataset dourado.
 - **PII masking por regex é melhor-esforço.** Formatos não previstos podem
