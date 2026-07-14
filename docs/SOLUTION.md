@@ -3,7 +3,7 @@
 > Entregável 1 do teste prático de Engenheiro(a) de IA da +A Educação.
 > Este documento descreve a solução, as decisões de projeto e a comparação entre
 > duas abordagens arquiteturais. O protótipo funcional (Entregável 2) está neste
-> repositório; o registro de uso de IA (Entregável 3) está em `AI_USAGE.md`.
+> repositório; o registro de uso de IA (Entregável 3) está em `docs/AI_USAGE.md`.
 
 ---
 
