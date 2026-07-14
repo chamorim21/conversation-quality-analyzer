@@ -8,8 +8,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "tsx watch src/api/index.ts",
-    "start": "node dist/api/index.js",
+    "dev": "tsx watch --env-file-if-exists=.env src/api/index.ts",
+    "start": "node --env-file-if-exists=.env dist/api/index.js",
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest"
