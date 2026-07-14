@@ -53,68 +53,125 @@ npm run demo    # avalia conversas de exemplo contra uma API no ar
 | `GET /metrics`       | Métricas agregadas das avaliações persistidas          |
 
 Em `options` (opcional): `rubric` seleciona a rubrica de `rubrics/*.yaml` —
-`"default"` (versão mais recente) ou pinada, ex.: `"default@1"` — e `model`
+`"default"` (versão mais recente) ou pinada, ex.: `"default@2"` — e `model`
 troca o modelo (`"gpt-4o-mini"` default, `"gpt-4o"`). Erros são explícitos:
 `400` (schema inválido), `404` (rubrica desconhecida), `422` (conversa não
 avaliável), `502` (LLM falhou após retries), `500` (falha de auditoria).
 
 ### Exemplo de requisição
 
-A requisição abaixo é a sessão de exemplo `S_84b564f9` **resumida às duas
-mensagens de abertura**; a resposta a seguir é a saída real dessa sessão, então
-os metadados refletem a conversa completa de 24 mensagens.
+A requisição abaixo é a sessão de exemplo `S_5ee36f40` **completa** (16
+mensagens, de `data/examples.json`) — um atendimento problemático: o atendente
+ignora correções do cliente, repete perguntas já respondidas e a conversa
+termina sem resolução. A resposta a seguir é a saída real dessa requisição.
 
 ```bash
 curl -s http://localhost:3000/evaluations \
   -H 'content-type: application/json' \
   -d '{
     "conversation": {
-      "sessionId": "S_84b564f9",
+      "sessionId": "S_5ee36f40",
       "channel": "whatsapp",
       "messages": [
-        { "role": "customer",  "content": "Eu sou Pessoa_015" },
-        { "role": "attendant", "content": "Olá, Karina! Ótimo saber que você atua em Saúde Corporativa. Qual seu principal objetivo ao buscar uma especialização agora?" }
+        { "role": "customer",  "content": "Eu sou Pessoa_018" },
+        { "role": "customer",  "content": "Licenciatura" },
+        { "role": "attendant", "content": "Olá, Pessoa_018, eu sou a Beatriz, consultora de carreira da +A Code Academy. Vi que você tem interesse em uma pós-graduação. Me conta: você já tem um curso em mente?" },
+        { "role": "attendant", "content": "Entendi, você tem interesse em Licenciatura. Gostaria de entender um pouco mais sobre seus objetivos profissionais para te orientar melhor: o que te levou a buscar uma licenciatura neste momento?" },
+        { "role": "customer",  "content": "Não eu não tenho interesse em licenciatura eu tenho licenciatura em filosofia" },
+        { "role": "attendant", "content": "Entendi, obrigado pelo esclarecimento. Você está buscando uma pós-graduação em alguma área específica ou pensando em mudar de área? Quero entender melhor seus objetivos para te orientar da melhor forma." },
+        { "role": "customer",  "content": "Respondi a pergunta" },
+        { "role": "attendant", "content": "Obrigado! Só para confirmar, você está buscando uma pós-graduação em uma área específica ou interessado em migrar para outra área?\nSe puder me contar qual área você tem interesse, consigo te orientar melhor." },
+        { "role": "customer",  "content": "Mas agora já está tarde e não poderei aprofundar a conversa" },
+        { "role": "customer",  "content": "Retorno noutra ocasião" },
+        { "role": "attendant", "content": "Sem problemas, podemos continuar quando for melhor para você. Prefere agendar um horário para retomarmos a conversa? Assim consigo te ajudar com calma." },
+        { "role": "customer",  "content": "Vc não viu as mensagens" },
+        { "role": "attendant", "content": "Sem problemas! Quando for o melhor momento para você retomar, estarei à disposição para ajudar. Fique à vontade para retornar quando quiser continuar a conversa sobre sua pós-graduação." },
+        { "role": "customer",  "content": "Bia noite" },
+        { "role": "attendant", "content": "Recebi suas mensagens sim! Só para ter certeza, você está interessado em uma pós-graduação em alguma área específica ou deseja migrar de área? Assim consigo te orientar com mais precisão." },
+        { "role": "attendant", "content": "Boa noite! Podemos retomar sua orientação sobre pós-graduação agora? Fico à disposição para entender seus objetivos e ajudar na escolha do curso ideal, caso queira continuar." }
       ]
     },
-    "options": { "rubric": "default@1", "model": "gpt-4o-mini" }
+    "options": { "rubric": "default@2", "model": "gpt-4o-mini" }
   }'
 ```
 
-### Exemplo de resposta (saída real de `S_84b564f9`, justificativas resumidas)
+### Exemplo de resposta (saída real de `S_5ee36f40`)
+
+Note as notas baixas com evidências apontando as mensagens originais
+(`messageIndex`), a flag `customer_frustration` disparada e o resumo executivo.
 
 ```json
 {
-  "evaluationId": "fc2a0235-95f4-4214-a262-b1ca2cf74f15",
+  "evaluationId": "bf449e19-0e6f-46e6-9ccc-ce4ca9bcd216",
   "dimensions": [
     {
       "dimensionId": "communication",
-      "score": 4,
-      "justification": "Comunicação clara e objetiva, com tom amigável.",
+      "score": 2,
+      "justification": "A comunicação do atendente apresenta falhas relevantes, como a repetição de perguntas já respondidas e um tom que não se adapta à frustração do cliente. O atendente não demonstra clareza e concisão, resultando em uma conversa confusa.",
       "evidence": [
-        { "messageIndex": 1, "quote": "Olá, Karina! Ótimo saber que você atua em Saúde Corporativa." }
+        { "messageIndex": 3, "quote": "o que te levou a buscar uma licenciatura neste momento?" },
+        { "messageIndex": 7, "quote": "Você está buscando uma pós-graduação em uma área específica ou interessado em migrar para outra área?" },
+        { "messageIndex": 14, "quote": "Só para ter certeza, você está interessado em uma pós-graduação em alguma área específica ou deseja migrar de área?" }
       ]
     },
-    { "dimensionId": "contextual_understanding", "score": 4, "justification": "…", "evidence": [] },
-    { "dimensionId": "compliance_accuracy",      "score": 4, "justification": "…", "evidence": [] },
-    { "dimensionId": "resolution",               "score": 4, "justification": "…", "evidence": [] }
+    {
+      "dimensionId": "contextual_understanding",
+      "score": 1,
+      "justification": "O atendente ignora a correção do cliente sobre já ter uma licenciatura e continua a fazer perguntas que já foram respondidas, demonstrando falta de compreensão do contexto da conversa.",
+      "evidence": [
+        { "messageIndex": 4, "quote": "Não eu não tenho interesse em licenciatura eu tenho licenciatura em filosofia" },
+        { "messageIndex": 6, "quote": "Respondi a pergunta" },
+        { "messageIndex": 11, "quote": "Vc não viu as mensagens" }
+      ]
+    },
+    {
+      "dimensionId": "compliance_accuracy",
+      "score": 3,
+      "justification": "O atendente não viola regras de negócio, mas também não demonstra cuidado além do mínimo. As informações fornecidas estão dentro do esperado, mas não há evidência de manejo cuidadoso.",
+      "evidence": [
+        { "messageIndex": 2, "quote": "consultora de carreira da +A Code Academy." },
+        { "messageIndex": 10, "quote": "Podemos continuar quando for melhor para você." }
+      ]
+    },
+    {
+      "dimensionId": "resolution",
+      "score": 1,
+      "justification": "A conversa não avança em direção ao objetivo do cliente, que é discutir a pós-graduação. O cliente expressa frustração e decide encerrar a conversa sem que suas necessidades tenham sido atendidas.",
+      "evidence": [
+        { "messageIndex": 8, "quote": "Mas agora já está tarde e não poderei aprofundar a conversa" },
+        { "messageIndex": 9, "quote": "Retorno noutra ocasião" },
+        { "messageIndex": 12, "quote": "Fique à vontade para retornar quando quiser continuar a conversa sobre sua pós-graduação." }
+      ]
+    }
   ],
-  "overallScore": 4,
+  "overallScore": 1.75,
   "flags": [
-    { "flagId": "hallucination", "triggered": false, "justification": "", "evidence": [] }
+    { "flagId": "hallucination", "triggered": false, "justification": "", "evidence": [] },
+    { "flagId": "sensitive_data_exposure", "triggered": false, "justification": "", "evidence": [] },
+    {
+      "flagId": "customer_frustration",
+      "triggered": true,
+      "justification": "O cliente expressa frustração ao afirmar que o atendente não leu suas mensagens e decide encerrar a conversa.",
+      "evidence": [
+        { "messageIndex": 11, "quote": "Vc não viu as mensagens" },
+        { "messageIndex": 8, "quote": "Mas agora já está tarde e não poderei aprofundar a conversa" }
+      ]
+    },
+    { "flagId": "business_rule_violation", "triggered": false, "justification": "", "evidence": [] }
   ],
-  "summary": "Atendimento claro, com boa compreensão do contexto e encaminhamento adequado.",
+  "summary": "A conversa apresenta falhas significativas na comunicação e compreensão contextual, com o atendente repetindo perguntas já respondidas e não adaptando seu tom à frustração do cliente. A resolução da necessidade do cliente não é alcançada, resultando em insatisfação.",
   "metadata": {
-    "evaluationId": "fc2a0235-95f4-4214-a262-b1ca2cf74f15",
+    "evaluationId": "bf449e19-0e6f-46e6-9ccc-ce4ca9bcd216",
     "rubricId": "default",
-    "rubricVersion": 1,
+    "rubricVersion": 2,
     "promptVersion": "v1",
     "model": "gpt-4o-mini",
-    "tokensIn": 3668,
-    "tokensOut": 669,
-    "costUsd": 0.0009516,
-    "latencyMs": 11305,
+    "tokensIn": 3162,
+    "tokensOut": 674,
+    "costUsd": 0.0008787,
+    "latencyMs": 17680,
     "truncated": false,
-    "createdAt": "2026-07-14T03:24:19.679Z"
+    "createdAt": "2026-07-14T19:54:03.252Z"
   }
 }
 ```
@@ -126,7 +183,7 @@ desafio) contra uma API **no ar** (OpenAI real). Suba o servidor em um terminal
 e rode a demo em outro:
 
 ```bash
-npm run demo -- --session S_84b564f9          # uma sessão
+npm run demo -- --session S_5ee36f40          # uma sessão
 npm run demo                                  # todas as conversas
 npm run demo -- --rubric default@1 --model gpt-4o
 ```
