@@ -10,7 +10,7 @@
 ## 1. Visão geral
 
 O **Conversation Quality Analyzer** é uma API que avalia automaticamente a
-qualidade de atendimentos em canais digitais (chat/WhatsApp). Ela recebe uma
+qualidade de atendimentos em canais digitais como WhatsApp. Ela recebe uma
 conversa entre cliente e atendente, avalia-a com um modelo de linguagem (LLM)
 atuando como **juiz** (padrão conhecido como *LLM-as-judge*) contra uma **rubrica
 de critérios versionada**, e devolve uma análise estruturada: notas por dimensão
