@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { parseRubric, type RubricDimension } from '../../src/rubric/schema.js';
 import { MockLlmClient } from '../../src/evaluation/llm-client.js';
 import { evaluateConversation } from '../../src/evaluation/orchestrator.js';
-import type { Conversation } from '../../src/domain/conversation.js';
+import type { PreparedConversation } from '../../src/preprocessing/truncate.js';
 
 function anchors(): RubricDimension['anchors'] {
   return { '0': 'z', '1': 'o', '2': 'd', '3': 't', '4': 'q', '5': 'c' };
@@ -31,12 +31,14 @@ const rubric = parseRubric({
   flags: [{ id: 'hallucination', description: 'Inventou informação.' }],
 });
 
-const conversation: Conversation = {
+const conversation: PreparedConversation = {
   sessionId: 'S_1',
-  messages: [
-    { role: 'customer', content: 'quero informações' },
-    { role: 'attendant', content: 'claro, posso ajudar' },
+  entries: [
+    { kind: 'message', originalIndex: 0, role: 'customer', content: 'quero informações' },
+    { kind: 'message', originalIndex: 1, role: 'attendant', content: 'claro, posso ajudar' },
   ],
+  truncated: false,
+  omittedMessageCount: 0,
 };
 
 function validRaw() {

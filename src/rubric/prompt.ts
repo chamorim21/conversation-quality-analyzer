@@ -1,4 +1,4 @@
-import type { Conversation } from '../domain/conversation.js';
+import type { PreparedConversation } from '../preprocessing/truncate.js';
 import { ANCHOR_LEVELS, type Rubric } from './schema.js';
 
 /**
@@ -52,19 +52,23 @@ export function buildSystemPrompt(rubric: Rubric): string {
 }
 
 /**
- * Renders the user prompt: the conversation with each message prefixed by its
- * index, so the model can cite evidence by index.
+ * Renders the user prompt from a preprocessed (possibly truncated) conversation.
+ * Each message is prefixed with its **original** index so the model cites
+ * evidence against the original conversation even after the middle was dropped
+ * (R3/R5); a dropped span is rendered as its omission marker line.
  */
-export function buildUserPrompt(conversation: Conversation): string {
+export function buildUserPrompt(conversation: PreparedConversation): string {
   const header = `Sessão: ${conversation.sessionId ?? '(sem id)'}`;
-  const lines = conversation.messages.map(
-    (message, index) => `[${index}] ${message.role}: ${message.content}`,
+  const lines = conversation.entries.map((entry) =>
+    entry.kind === 'message'
+      ? `[${entry.originalIndex}] ${entry.role}: ${entry.content}`
+      : entry.text,
   );
   return `${header}\n\nConversa:\n${lines.join('\n')}`;
 }
 
 /** Convenience bundle: prompt version plus system and user messages. */
-export function renderPrompt(rubric: Rubric, conversation: Conversation) {
+export function renderPrompt(rubric: Rubric, conversation: PreparedConversation) {
   return {
     promptVersion: PROMPT_VERSION,
     system: buildSystemPrompt(rubric),

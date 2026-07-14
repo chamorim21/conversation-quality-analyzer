@@ -6,9 +6,30 @@ import {
   renderPrompt,
   PROMPT_VERSION,
 } from '../../src/rubric/prompt.js';
+import type { MessageRole } from '../../src/domain/conversation.js';
+import type { PreparedConversation } from '../../src/preprocessing/truncate.js';
 
 function anchors(): RubricDimension['anchors'] {
   return { '0': 'z', '1': 'o', '2': 'd', '3': 't', '4': 'q', '5': 'c' };
+}
+
+/** Builds a non-truncated {@link PreparedConversation} where each message keeps
+ * its position as its original index. */
+function prepared(
+  messages: Array<{ role: MessageRole; content: string }>,
+  sessionId?: string,
+): PreparedConversation {
+  return {
+    ...(sessionId !== undefined ? { sessionId } : {}),
+    entries: messages.map((message, index) => ({
+      kind: 'message',
+      originalIndex: index,
+      role: message.role,
+      content: message.content,
+    })),
+    truncated: false,
+    omittedMessageCount: 0,
+  };
 }
 
 function rubricWith(dimensions: RubricDimension[]) {
@@ -67,24 +88,44 @@ describe('buildSystemPrompt', () => {
 
 describe('buildUserPrompt', () => {
   it('prefixes each message with its 0-based index', () => {
-    const user = buildUserPrompt({
-      sessionId: 'S_1',
-      messages: [
-        { role: 'customer', content: 'olá' },
-        { role: 'attendant', content: 'oi, tudo bem?' },
-      ],
-    });
+    const user = buildUserPrompt(
+      prepared(
+        [
+          { role: 'customer', content: 'olá' },
+          { role: 'attendant', content: 'oi, tudo bem?' },
+        ],
+        'S_1',
+      ),
+    );
     expect(user).toContain('Sessão: S_1');
     expect(user).toContain('[0] customer: olá');
     expect(user).toContain('[1] attendant: oi, tudo bem?');
+  });
+
+  it('renders original indices and the omission marker for a truncated conversation', () => {
+    const user = buildUserPrompt({
+      entries: [
+        { kind: 'message', originalIndex: 0, role: 'customer', content: 'primeira' },
+        { kind: 'omission', omittedCount: 5, text: '[... 5 mensagens omitidas ...]' },
+        { kind: 'message', originalIndex: 7, role: 'attendant', content: 'última' },
+      ],
+      truncated: true,
+      omittedMessageCount: 5,
+    });
+    // Indices reflect the original positions, not the truncated array order.
+    expect(user).toContain('[0] customer: primeira');
+    expect(user).toContain('[... 5 mensagens omitidas ...]');
+    expect(user).toContain('[7] attendant: última');
+    expect(user).not.toContain('[1] attendant: última');
   });
 });
 
 describe('renderPrompt', () => {
   it('bundles the prompt version with system and user messages', () => {
-    const result = renderPrompt(rubricWith([baseDimension]), {
-      messages: [{ role: 'customer', content: 'oi' }],
-    });
+    const result = renderPrompt(
+      rubricWith([baseDimension]),
+      prepared([{ role: 'customer', content: 'oi' }]),
+    );
     expect(result.promptVersion).toBe(PROMPT_VERSION);
     expect(result.system).toContain('Comunicação');
     expect(result.user).toContain('[0] customer: oi');

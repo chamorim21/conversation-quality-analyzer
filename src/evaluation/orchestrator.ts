@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Conversation } from '../domain/conversation.js';
+import type { PreparedConversation } from '../preprocessing/truncate.js';
 import type {
   DimensionResult,
   EvaluationResult,
@@ -109,8 +109,9 @@ function toDomainResults(rubric: Rubric, payload: ResponsePayload): {
 export interface EvaluateConversationParams {
   client: LlmClient;
   rubric: Rubric;
-  /** The masked, preprocessed conversation to evaluate. */
-  conversation: Conversation;
+  /** The masked, preprocessed (normalized, PII-masked, truncated) conversation
+   * to evaluate. */
+  conversation: PreparedConversation;
   model: string;
 }
 
