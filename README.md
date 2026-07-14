@@ -12,6 +12,18 @@ The rubric is the single source of truth: the prompt, the structured-output JSON
 Schema, and the weighted aggregation are all derived from it at runtime, so
 changing the evaluation criteria is a YAML edit — no code change.
 
+## Challenge deliverables
+
+This repository is the functional prototype (deliverable 2). The written
+deliverables are in `docs/` (in Portuguese, as they address the challenge
+reviewer):
+
+- [`docs/SOLUTION.md`](docs/SOLUTION.md) — solution document: overview, flow,
+  technical decisions, prompt/model/orchestration strategy, comparison of the
+  two architectural approaches, risks and next steps.
+- [`docs/AI_USAGE.md`](docs/AI_USAGE.md) — record of how AI assistants were
+  used during development and how their suggestions were validated.
+
 ## What it does
 
 - **Scores** each conversation on the rubric's dimensions (0–5 with descriptive
