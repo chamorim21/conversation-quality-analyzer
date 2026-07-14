@@ -158,3 +158,33 @@ For each relevant use we record three points:
     (the loop) from the acceptable ones; subtle hallucination detection is the
     main gap and is addressed in the solution document (model choice + golden
     dataset).
+
+## Phase 10 — Deliverables (AI_USAGE + solution document)
+
+- **Where**: consolidating this record and writing the solution document
+  (`docs/SOLUTION.md`).
+- **Why**: produce the two written deliverables of the challenge (this AI-usage
+  log and the solution document) without contradicting the implementation.
+- **How it was validated**: the solution document's economic-viability and
+  architecture-comparison sections use real numbers read from `GET /metrics` over
+  the four sanity evaluations (avg ≈ US$0.00083/evaluation, latency p50 ≈ 11.2 s /
+  p95 ≈ 17.2 s); every claim was cross-checked against the code and the test suite.
+
+---
+
+# How AI was used — at a glance
+
+- **Assistant**: an AI coding assistant (Claude Code) was used throughout, driven
+  by a spec-first workflow (interview → SPEC → PLAN → per-task implement/review).
+- **Scope**: scaffolding, domain/rubric modelling, preprocessing, the LLM
+  layer/orchestrator/aggregation, the API, persistence, observability, the demo,
+  the Dockerfile, and these documents.
+- **Validation discipline** (the "how it was validated" of each phase, summarized):
+  - Automated tests were written alongside every module and run **without an API
+    key** (a mocked LLM client), so behavior is verified deterministically —
+    122 tests at v1.0.
+  - The LLM-dependent behavior was checked with **real OpenAI runs** on the
+    challenge's own sample conversations (manual MVP validation + the four sanity
+    cases), and the numbers were read back from the audit trail and `/metrics`.
+  - Every AI suggestion was reviewed against the spec and, where it touched
+    behavior, locked with a test before being accepted; nothing was taken on trust.
