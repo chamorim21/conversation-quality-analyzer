@@ -17,3 +17,6 @@ data/*.db-shm
 # Logs and temporary files
 *.log
 .DS_Store
+
+# Generated PDFs (e.g. docs/SOLUTION.pdf)
+*.pdf
