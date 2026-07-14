@@ -31,9 +31,11 @@ Run a single test file: `npx vitest run tests/rubric/prompt.test.ts`.
 
 ## Conventions
 
-- **Language:** all code, comments, strings, tests, and deliverables (README,
-  AI_USAGE, this file) are in **English**. Executive summaries produced *by the
-  judge* are in Portuguese (that's product output, not source).
+- **Language:** all code, comments, strings, tests, and repo infrastructure
+  (README, this file) are in **English**. The two challenge deliverables —
+  `docs/AI_USAGE.md` and `docs/SOLUTION.md` — are in **Portuguese** (their
+  audience is the challenge reviewer). Executive summaries produced *by the
+  judge* are also in Portuguese (product output, not source).
 - **Message roles are `customer` and `attendant`** — never `agent`/`user`
   (avoids collision with "AI agent"). Any bot or human support rep is
   `attendant`. See `src/domain/conversation.ts`.
