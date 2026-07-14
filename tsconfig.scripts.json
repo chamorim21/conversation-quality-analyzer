@@ -1,0 +1,9 @@
+{
+  "//": "Type-check-only config that also covers scripts/ (outside the build's rootDir).",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src", "scripts"]
+}

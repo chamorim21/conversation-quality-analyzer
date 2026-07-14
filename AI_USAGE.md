@@ -109,3 +109,52 @@ For each relevant use we record three points:
     procurado atualmente" claim was cited but the `hallucination` flag was left
     off. Noted as a known limitation of `gpt-4o-mini` on subtle cases — motivates
     offering `gpt-4o` and building a golden dataset (both already in the plan).
+
+## Phase 7 — Persistence and audit trail
+
+- **Where**: SQLite (WAL) with idempotent boot migrations, the audit repository
+  (`src/persistence/*`), cost calculation (`src/observability/cost.ts`), and
+  wiring the audit write into the request path.
+- **Why**: persist a complete, reproducible audit row (R8) for every evaluation —
+  success and failure — on the critical path, so no 200 is ever returned without
+  its audit.
+- **How it was validated**: repository round-trip tests over a temp SQLite,
+  idempotent-migration test, and API tests proving a full success audit row, a
+  failure audit on a 502, and a 500 when the write fails.
+
+## Phase 8 — Metrics and observability
+
+- **Where**: `GET /metrics` (pure `computeMetrics` + repository aggregates), the
+  SQLite reachability check in `GET /health`, and correlation-id logging across
+  the request/LLM/persistence stages.
+- **Why**: expose operational metrics (cost, tokens, latency p50/p95, score
+  distributions, flags) and make failures observable end to end.
+- **How it was validated**: unit tests for the percentile and `computeMetrics`
+  math against known values (including multi-rubric-version grouping), an
+  integration test with a failed evaluation in the mix, `/health` up/down, and a
+  correlation-id-across-layers log assertion.
+
+## Phase 9 — Demo, Docker and README (v1.0)
+
+- **Where**: `scripts/demo.ts` (evaluates sample conversations against the live
+  API), the multi-stage `Dockerfile` (native `better-sqlite3` compiled in the
+  build stage, reused in the slim runtime), and the complete `README.md`.
+- **Why**: package the prototype for real use and provide the real-time
+  demonstration of the implemented single-call approach.
+- **How it was validated**:
+  - `docker build` succeeded and the container served `/health`, `/metrics`, and
+    a 422 with only a dummy key (no OpenAI cost).
+  - **Sanity cases run against the real API** (`gpt-4o-mini`, via `npm run demo`),
+    total cost ≈ US$0.0033, avg latency ≈ 14 s:
+    - `S_5ee36f40` (loop / loss of context): correctly discriminated — overall
+      **2.5**, dimensions 2/2/4/2, and the `customer_frustration` flag triggered.
+    - `S_84b564f9` (possible hallucination): overall 4, no flags — the subtle
+      hallucination was again not flagged (consistent `gpt-4o-mini` limitation).
+    - `S_213f6505` (CPF collection): overall 4, no flags. Note: PII is masked
+      before the LLM, so `sensitive_data_exposure` is intentionally hard to
+      trigger from the masked text — a design nuance, not a judge miss.
+    - `S_68c0d237` (honesty about a professor): overall 4, no flags.
+  - Takeaway: the judge cleanly separates the genuinely problematic conversation
+    (the loop) from the acceptable ones; subtle hallucination detection is the
+    main gap and is addressed in the solution document (model choice + golden
+    dataset).

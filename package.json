@@ -11,8 +11,10 @@
     "dev": "tsx watch --env-file-if-exists=.env src/api/index.ts",
     "start": "node --env-file-if-exists=.env dist/api/index.js",
     "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.scripts.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "demo": "tsx scripts/demo.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",

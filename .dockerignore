@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+.git
+.claude
+.env
+.env.local
+*.log
+data/*.db
+data/*.db-wal
+data/*.db-shm
+.DS_Store
