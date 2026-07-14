@@ -257,7 +257,7 @@ describe('GET /metrics', () => {
       const res = await application.inject({
         method: 'POST',
         url: '/evaluations',
-        payload: { conversation: validConversation },
+        payload: { conversation: validConversation, options: { rubric: 'default@1' } },
       });
       expect(res.statusCode).toBe(200);
     }

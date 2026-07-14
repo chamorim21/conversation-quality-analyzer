@@ -110,7 +110,7 @@ describe('POST /evaluations', () => {
     const response = await makeApp().inject({
       method: 'POST',
       url: '/evaluations',
-      payload: { conversation: validConversation },
+      payload: { conversation: validConversation, options: { rubric: 'default@1' } },
     });
 
     expect(response.statusCode).toBe(200);
@@ -146,7 +146,7 @@ describe('POST /evaluations', () => {
       method: 'POST',
       url: '/evaluations',
       headers: { 'x-correlation-id': 'corr-abc' },
-      payload: { conversation: validConversation },
+      payload: { conversation: validConversation, options: { rubric: 'default@1' } },
     });
     expect(response.statusCode).toBe(200);
     const { evaluationId } = response.json();
