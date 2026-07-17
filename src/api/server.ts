@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
 import { ZodError } from 'zod';
 import type { AppConfig } from '../config/env.js';
+import { UnsupportedModelError } from '../config/models.js';
 import { LlmError, type LlmClient } from '../evaluation/llm-client.js';
 import { NotEvaluableError } from '../preprocessing/evaluability.js';
 import type { EvaluationRepository } from '../persistence/repository.js';
@@ -64,6 +65,12 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
     // Unknown rubric/version (R4) → 404 listing what is available.
     if (error instanceof RubricNotFoundError) {
       reply.status(404).send({ error: error.message, available: error.available });
+      return;
+    }
+    // Unknown or budget-incompatible model → 400 listing the catalog. Caught
+    // before the LLM stage, so it produces no audit row.
+    if (error instanceof UnsupportedModelError) {
+      reply.status(400).send({ error: error.message, available: error.available });
       return;
     }
     // Deterministic evaluability failure (R2) → 422 with a readable reason.

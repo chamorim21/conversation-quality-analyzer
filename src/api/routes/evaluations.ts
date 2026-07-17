@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
 import { z } from 'zod';
 import { adaptCanonicalConversation } from '../../adapters/canonical.js';
+import { assertModelSupported } from '../../config/models.js';
 import type { EvaluationMetadata } from '../../domain/evaluation.js';
 import { LlmError, LlmRequestError, LlmSchemaError } from '../../evaluation/llm-client.js';
 import { evaluateConversation } from '../../evaluation/orchestrator.js';
@@ -61,6 +62,10 @@ export function registerEvaluationsRoute(
     const conversation = adaptCanonicalConversation(parsed.conversation);
     const rubric = deps.rubrics.get(parsed.options?.rubric ?? DEFAULT_RUBRIC_SELECTOR);
     const model = parsed.options?.model ?? deps.config.DEFAULT_MODEL;
+    // Reject an unknown or incompatible model before any preprocessing or LLM
+    // call, so no tokens are spent and no audit row is written (like the other
+    // pre-LLM 4xx). Throws UnsupportedModelError → 400 in the error handler.
+    assertModelSupported(model, deps.config.MAX_CONVERSATION_TOKENS);
     log.info(
       { stage: 'request', rubric: `${rubric.id}@${rubric.version}`, model },
       'evaluation received',

@@ -55,8 +55,10 @@ npm run demo    # avalia conversas de exemplo contra uma API no ar
 Em `options` (opcional): `rubric` seleciona a rubrica de `rubrics/*.yaml` —
 `"default"` (versão mais recente) ou pinada, ex.: `"default@2"` — e `model`
 troca o modelo (`"gpt-5.4-mini"` default; ex.: `"gpt-5.6-terra"`). Erros são explícitos:
-`400` (schema inválido), `404` (rubrica desconhecida), `422` (conversa não
-avaliável), `502` (LLM falhou após retries), `500` (falha de auditoria).
+`400` (schema inválido, ou modelo desconhecido/incompatível com a janela de
+contexto — a resposta lista os modelos do catálogo), `404` (rubrica
+desconhecida), `422` (conversa não avaliável), `502` (LLM falhou após retries),
+`500` (falha de auditoria).
 
 ### Exemplo de requisição
 

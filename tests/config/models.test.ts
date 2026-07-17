@@ -82,3 +82,18 @@ describe('assertModelSupported', () => {
     expect(err.available.sort()).toEqual([...CATALOG_MODELS].sort());
   });
 });
+
+// The boot check (src/api/index.ts) is just assertModelSupported applied to
+// DEFAULT_MODEL + MAX_CONVERSATION_TOKENS; loadConfig is memoized, so the boot
+// behavior is exercised through the function directly rather than the process.
+describe('boot validation (DEFAULT_MODEL)', () => {
+  it('throws when the default model is unknown', () => {
+    expect(() => assertModelSupported('foo', 30_000)).toThrow(UnsupportedModelError);
+  });
+
+  it('throws when the budget does not fit the default model window', () => {
+    expect(() => assertModelSupported('gpt-5.4-mini', 5_000_000)).toThrow(
+      UnsupportedModelError,
+    );
+  });
+});

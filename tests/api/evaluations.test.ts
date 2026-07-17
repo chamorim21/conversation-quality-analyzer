@@ -272,6 +272,43 @@ describe('POST /evaluations', () => {
     expect(response.json().available).toContain('default@1');
   });
 
+  it('returns 400 with the catalog when options.model is unknown, without calling the LLM', async () => {
+    let called = false;
+    const client = new MockLlmClient((req) => {
+      called = true;
+      return { raw: validRawFor(req), tokensIn: 10, tokensOut: 5 };
+    });
+    const response = await makeApp(client).inject({
+      method: 'POST',
+      url: '/evaluations',
+      payload: { conversation: validConversation, options: { model: 'gpt-nonexistent' } },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().available).toContain('gpt-5.4-mini');
+    expect(called).toBe(false);
+    const count = db.prepare('SELECT COUNT(*) AS n FROM evaluations').get() as { n: number };
+    expect(count.n).toBe(0);
+  });
+
+  it('returns 400 for a known model whose window cannot fit the configured budget', async () => {
+    // A budget larger than any model's window: even a cataloged model is rejected.
+    const hugeBudget: AppConfig = { ...config, MAX_CONVERSATION_TOKENS: 5_000_000 };
+    let called = false;
+    const client = new MockLlmClient((req) => {
+      called = true;
+      return { raw: validRawFor(req), tokensIn: 10, tokensOut: 5 };
+    });
+    const response = await makeApp(client, hugeBudget).inject({
+      method: 'POST',
+      url: '/evaluations',
+      payload: { conversation: validConversation, options: { model: 'gpt-5.4-mini' } },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(called).toBe(false);
+    const count = db.prepare('SELECT COUNT(*) AS n FROM evaluations').get() as { n: number };
+    expect(count.n).toBe(0);
+  });
+
   it('returns 422 with a reason when the conversation is not evaluable', async () => {
     const response = await makeApp().inject({
       method: 'POST',

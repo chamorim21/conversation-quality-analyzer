@@ -1,4 +1,5 @@
 import { loadConfig } from '../config/env.js';
+import { assertModelSupported } from '../config/models.js';
 import { OpenAiLlmClient } from '../evaluation/llm-client.js';
 import { loadRubrics } from '../rubric/loader.js';
 import { logger } from '../observability/logger.js';
@@ -14,6 +15,9 @@ import { buildServer } from './server.js';
  */
 async function main(): Promise<void> {
   const config = loadConfig();
+  // Fail-fast: the default model must be known and its context window must fit
+  // MAX_CONVERSATION_TOKENS + the fixed reserve, or the process must not start.
+  assertModelSupported(config.DEFAULT_MODEL, config.MAX_CONVERSATION_TOKENS);
   const rubrics = loadRubrics();
   const db = openDatabase(config.DB_PATH);
   const repository = createEvaluationRepository(db);

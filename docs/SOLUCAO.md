@@ -168,9 +168,16 @@ versão; **zero mudança de código**.
   requisição (`options.model`) ou por ambiente. A troca é de um parâmetro.
   (O `gpt-4o-mini`, padrão original do protótipo, foi aposentado pela OpenAI
   em 2026; a migração foi uma troca de configuração e uma re-medição.)
-- **Cálculo de custo transparente.** Uma tabela de preços por token
-  (`src/config/models.ts`) alimenta o custo estimado, persistido na auditoria e
-  exposto em `/metrics`.
+- **Cálculo de custo transparente.** Um catálogo de modelos
+  (`src/config/models.ts`) — preço por token **e** janela de contexto —
+  alimenta o custo estimado, persistido na auditoria e exposto em `/metrics`.
+- **Modelo validado, não presumido.** O mesmo catálogo registra a janela de
+  contexto de cada modelo. No boot, o processo só sobe se `DEFAULT_MODEL` for
+  conhecido e `MAX_CONVERSATION_TOKENS` + uma reserva fixa (prompt + rubrica +
+  schema + resposta) couberem na janela dele (*fail-fast*); por requisição, um
+  `options.model` desconhecido ou incompatível recebe **400** listando o
+  catálogo, antes de qualquer chamada ao LLM. Isso fecha a brecha do modelo
+  fora da tabela rodar com custo registrado como 0.
 - **Números reais do protótipo** (lidos da auditoria sobre as **20 conversas do
   dataset**, com `gpt-5.4-mini` e `default@2`, em 2026-07-17):
 
