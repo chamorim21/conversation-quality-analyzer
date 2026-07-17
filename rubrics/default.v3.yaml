@@ -1,0 +1,120 @@
+id: default
+version: 3
+
+# v3 — igual à v2, exceto pela flag sensitive_data_exposure.
+#
+# Motivação: a descrição da v2 ("solicitar, repetir ou expor dados pessoais")
+# era ampla demais e levava o juiz a tratar o NOME do cliente como dado
+# sensível em análise — usar o nome do interlocutor é conduta esperada de
+# atendimento, não exposição. A v3 enumera o que conta como dado sensível e
+# fixa as duas condutas-alvo: coleta desnecessária (minimização de dados,
+# LGPD) e re-exposição desnecessária num canal persistente.
+
+# v2 — calibração mais criteriosa que a v1.
+#
+# Motivação: na v1 as notas colapsavam em 4 ("na maior parte", "quase sempre",
+# "raramente falha"), premiando a AUSÊNCIA de defeito. Um bot educado e coerente,
+# mas padronizado e que não resolve de fato, ganhava 4 em tudo.
+#
+# Princípio de calibração da v2 (repetido nas descrições para chegar ao prompt):
+#   - 3 é a LINHA DE BASE: o atendente competente que cumpre o esperado sem se
+#     destacar. É onde um bot roteirizado comum deve cair por padrão.
+#   - 4 e 5 exigem EVIDÊNCIA POSITIVA de qualidade acima da base — não bastam
+#     "não errou". 5 é raro e precisa de evidência forte.
+#   - 0–2 têm gatilhos concretos; um único caso claro já puxa para baixo.
+
+dimensions:
+  - id: communication
+    name: Comunicação
+    description: >-
+      Clareza, concisão e adequação de tom. Fórmulas robóticas repetidas a cada
+      mensagem (por exemplo, reabrir toda resposta com "Entendi seu interesse em
+      X...") contam como redundância e reduzem a nota. Calibração: comunicação
+      apenas correta e padronizada é nota 3; 4 e 5 exigem evidência positiva de
+      concisão e adaptação genuína ao cliente, não só ausência de erro.
+    weight: 0.25
+    anchors:
+      "0": "Mensagens incompreensíveis ou tom claramente desrespeitoso/inadequado."
+      "1": "Muito confusa ou repetitiva a ponto de o cliente provavelmente não entender."
+      "2": "Falhas relevantes: redundância recorrente, respostas robóticas/genéricas repetidas, ou tom desalinhado ao cliente."
+      "3": "Linha de base: compreensível e correta, porém padronizada e sem concisão notável — cumpre o esperado sem se destacar."
+      "4": "Acima da base COM evidência positiva: clara, concisa, sem redundância perceptível e com adaptação real ao cliente (não apenas fórmulas)."
+      "5": "Raro e excepcional: precisa, empática e personalizada; cada mensagem agrega e não há nenhum ruído. Exige evidência forte."
+  - id: contextual_understanding
+    name: Compreensão contextual
+    description: >-
+      Entende a necessidade do cliente, integra correções e mensagens
+      fragmentadas e não repete perguntas já respondidas. Calibração:
+      acompanhar o essencial sem erro grosseiro é nota 3; 4 e 5 exigem
+      evidência de rastreamento ativo do histórico. Um único caso de repetir
+      algo já respondido, ou de ignorar uma correção do cliente, impede nota
+      acima de 2.
+    weight: 0.25
+    anchors:
+      "0": "Ignora completamente o contexto; respostas desconexas do que o cliente diz."
+      "1": "Repete perguntas já respondidas de forma recorrente ou ignora correções explícitas do cliente."
+      "2": "Pelo menos um caso claro de repetir algo já respondido, ou de perder uma correção/fragmento do cliente."
+      "3": "Linha de base: acompanha o essencial sem erros grosseiros, mas de forma superficial, sem demonstrar uso ativo do histórico."
+      "4": "Acima da base COM evidência positiva: referencia respostas anteriores e integra correções; nenhuma repetição indevida."
+      "5": "Raro: usa o contexto para antecipar e personalizar, lidando perfeitamente com fragmentos, correções e ordem fora de sequência."
+  - id: compliance_accuracy
+    name: Compliance e precisão
+    description: >-
+      Respeita regras de negócio (por exemplo, não informar preço diretamente e
+      encaminhar valores a um especialista), não inventa informações e trata
+      dados sensíveis com cuidado. Calibração: seguir as regras e não inventar,
+      dentro do que é observável, é nota 3; 4 e 5 exigem evidência ativa de
+      precisão e de manejo correto (não apenas a ausência de violação visível).
+    weight: 0.25
+    anchors:
+      "0": "Viola regra de negócio de forma grave ou inventa informação relevante."
+      "1": "Violação clara de regra de negócio ou imprecisão importante."
+      "2": "Ao menos um deslize: afirmação não sustentada pelo contexto ou manejo descuidado de dado sensível."
+      "3": "Linha de base: segue as regras e não inventa, dentro do observável, sem evidência de cuidado além do mínimo."
+      "4": "Acima da base COM evidência positiva: aderência consistente e ação correta explícita (por exemplo, encaminhar preço ao especialista de forma inequívoca) e informação precisa."
+      "5": "Raro: aderência total com cuidado exemplar e verificável no trato de dados sensíveis e nos limites do que pode afirmar."
+  - id: resolution
+    name: Resolutividade
+    description: >-
+      Avanço real em direção ao objetivo do cliente. Encaminhar corretamente
+      (inclusive repassar preço a um especialista, quando a regra exige) é o
+      esperado, mas NÃO é o mesmo que resolver a necessidade central do cliente
+      na conversa. Calibração: um repasse ou encaminhamento correto, sem
+      endereçar de fato a necessidade central, é nota 3; 4 e 5 exigem que o
+      objetivo do cliente tenha sido ativamente qualificado/endereçado, com
+      próximos passos concretos.
+    weight: 0.25
+    anchors:
+      "0": "Não avança em nada; conversa presa em loop ou abandonada."
+      "1": "Avanço mínimo; cliente termina sem direção clara."
+      "2": "Objetivo central do cliente fica majoritariamente sem resposta, ou há repasse sem sequer captar a necessidade."
+      "3": "Linha de base: encaminha corretamente (inclusive ao especialista quando exigido), mas sem resolver de fato a necessidade central do cliente na conversa."
+      "4": "Acima da base COM evidência positiva: conduz ativamente ao objetivo, com a necessidade do cliente qualificada e próximos passos concretos."
+      "5": "Raro: resolve plenamente, ou entrega um encaminhamento completo e inequívoco, com a necessidade totalmente qualificada e próximos passos claros, sem loops."
+
+flags:
+  - id: hallucination
+    description: >-
+      O atendente afirma informações que não pode sustentar ou que não constam
+      do contexto: fatos, números, disponibilidade, prazos ou promessas
+      inventadas. Dispare com evidência clara, ainda que sutil.
+  - id: sensitive_data_exposure
+    description: >-
+      Manejo inadequado de dados sensíveis do cliente. Dados sensíveis são:
+      documentos (CPF, RG), dados financeiros ou de pagamento, credenciais e
+      senhas, endereço completo, telefone, e-mail e dados de saúde. Dispare
+      quando o atendente solicitar um desses dados sem necessidade clara para
+      a finalidade da conversa, ou expuser/repetir um desses dados por extenso
+      desnecessariamente (a prática correta é referência parcial, por exemplo
+      "CPF terminado em 00"). NÃO conta como dado sensível: o nome do cliente
+      usado normalmente na conversa — cumprimentar ou se dirigir a ele pelo
+      nome é conduta esperada, não exposição.
+  - id: customer_frustration
+    description: >-
+      Sinais de frustração, irritação ou insatisfação do cliente, mesmo sutis:
+      repetir-se por não ser compreendido, reclamar que não foi lido, ironia,
+      pressa em encerrar ou desistência.
+  - id: business_rule_violation
+    description: >-
+      Violação de uma regra de negócio explícita (por exemplo, informar preço
+      diretamente quando a regra é encaminhar a um especialista).
