@@ -34,7 +34,7 @@ function successRecord(overrides: Partial<EvaluationRecord> = {}): EvaluationRec
     rubricId: 'default',
     rubricVersion: 1,
     promptVersion: 'v1',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5.4-mini',
     tokensIn: 100,
     tokensOut: 20,
     costUsd: 0.00095,

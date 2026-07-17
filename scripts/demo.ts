@@ -11,7 +11,7 @@ import type { Conversation } from '../src/domain/conversation.js';
  *   npm run demo -- --session S_84b564f9          # one session
  *   npm run demo -- --session S_84b564f9 --session S_5ee36f40
  *   npm run demo                                  # all conversations
- *   npm run demo -- --rubric default@1 --model gpt-4o
+ *   npm run demo -- --rubric default@1 --model gpt-5.6-terra
  *
  * This is the real-time demonstration of the implemented (single-call) approach.
  */

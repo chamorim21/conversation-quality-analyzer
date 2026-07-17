@@ -29,7 +29,7 @@ function request(overrides: Partial<StructuredRequest<{ value: number }>> = {}) 
     user: 'user',
     schema: { type: 'object' },
     schemaName: 'test',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5.4-mini',
     validate: (raw: unknown) => payloadSchema.parse(raw),
     ...overrides,
   } satisfies StructuredRequest<{ value: number }>;
@@ -237,7 +237,7 @@ describe('OpenAiLlmClient', () => {
       model: string;
       response_format: { type: string; json_schema: { name: string; strict: boolean; schema: unknown } };
     };
-    expect(params.model).toBe('gpt-4o-mini');
+    expect(params.model).toBe('gpt-5.4-mini');
     expect(params.response_format.type).toBe('json_schema');
     expect(params.response_format.json_schema).toMatchObject({
       name: 'test',

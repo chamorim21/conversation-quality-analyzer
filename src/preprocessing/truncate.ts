@@ -42,7 +42,7 @@ export type TokenCounter = (text: string) => number;
 
 export interface TruncateOptions {
   maxTokens: number;
-  /** Defaults to the gpt-4o-mini (`o200k_base`) encoder. */
+  /** Defaults to the `o200k_base` encoder used by current OpenAI models. */
   countTokens?: TokenCounter;
 }
 
@@ -51,8 +51,8 @@ const MARKER_TOKEN_RESERVE = 16;
 
 let encoder: Tiktoken | undefined;
 
-/** Default token counter using the `o200k_base` encoding (gpt-4o / gpt-4o-mini).
- * The encoder is created lazily and reused. */
+/** Default token counter using the `o200k_base` encoding (GPT-4o and newer
+ * OpenAI models). The encoder is created lazily and reused. */
 export function countTokensDefault(text: string): number {
   encoder ??= getEncoding('o200k_base');
   return encoder.encode(text).length;

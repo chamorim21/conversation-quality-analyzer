@@ -115,8 +115,8 @@ Para cada uso relevante registramos três pontos:
   - Observação de calibração desse *run*: a afirmação sem suporte do atendente
     ("mais procurado atualmente") foi citada, mas a flag `hallucination` não foi
     disparada. Registrado como limitação conhecida do `gpt-4o-mini` em casos
-    sutis — motiva oferecer o `gpt-4o` e construir um dataset dourado (ambos já
-    no plano).
+    sutis — motiva oferecer um modelo maior (`gpt-5.6-terra`) e construir um
+    dataset dourado (ambos já no plano).
 
 ## Fase 7 — Persistência e trilha de auditoria
 

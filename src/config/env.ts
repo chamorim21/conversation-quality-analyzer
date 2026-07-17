@@ -7,7 +7,7 @@ import { z } from 'zod';
  */
 const EnvSchema = z.object({
   OPENAI_API_KEY: z.string().min(1, 'required'),
-  DEFAULT_MODEL: z.string().min(1).default('gpt-4o-mini'),
+  DEFAULT_MODEL: z.string().min(1).default('gpt-5.4-mini'),
   MAX_CONVERSATION_TOKENS: z.coerce.number().int().positive().default(30_000),
   LLM_MAX_CONCURRENCY: z.coerce.number().int().positive().default(5),
   PORT: z.coerce.number().int().positive().default(3000),

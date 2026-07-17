@@ -21,7 +21,7 @@ import { buildServer } from '../../src/api/server.js';
 
 const config: AppConfig = {
   OPENAI_API_KEY: 'test-key-not-used',
-  DEFAULT_MODEL: 'gpt-4o-mini',
+  DEFAULT_MODEL: 'gpt-5.4-mini',
   MAX_CONVERSATION_TOKENS: 30_000,
   LLM_MAX_CONCURRENCY: 5,
   PORT: 3000,
@@ -131,7 +131,7 @@ describe('POST /evaluations', () => {
       rubricId: 'default',
       rubricVersion: 1,
       promptVersion: 'v1',
-      model: 'gpt-4o-mini',
+      model: 'gpt-5.4-mini',
       tokensIn: 100,
       tokensOut: 20,
       truncated: false,
@@ -160,7 +160,7 @@ describe('POST /evaluations', () => {
       rubricId: 'default',
       rubricVersion: 1,
       promptVersion: 'v1',
-      model: 'gpt-4o-mini',
+      model: 'gpt-5.4-mini',
       tokensIn: 100,
       tokensOut: 20,
       retries: 0,

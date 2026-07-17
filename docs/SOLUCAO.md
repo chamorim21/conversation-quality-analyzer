@@ -163,8 +163,11 @@ versão; **zero mudança de código**.
 
 ## 5. Estratégia de modelos
 
-- **`gpt-4o-mini` como padrão** (barato e rápido), com **`gpt-4o` configurável**
-  por requisição (`options.model`) ou por ambiente. A troca é de um parâmetro.
+- **`gpt-5.4-mini` como padrão** (barato e rápido), com um modelo maior
+  (**`gpt-5.6-terra`**) ou mais barato (**`gpt-5.4-nano`**) configurável por
+  requisição (`options.model`) ou por ambiente. A troca é de um parâmetro.
+  (O `gpt-4o-mini`, padrão original do protótipo, foi aposentado pela OpenAI
+  em 2026; os números medidos abaixo são dele.)
 - **Cálculo de custo transparente.** Uma tabela de preços por token
   (`src/config/pricing.ts`) alimenta o custo estimado, persistido na auditoria e
   exposto em `/metrics`.
@@ -183,9 +186,9 @@ versão; **zero mudança de código**.
   "curso mais procurado"), o `gpt-4o-mini` **não** disparou a flag `hallucination`
   para uma afirmação sutil e sem suporte. Já o caso de loop (`S_5ee36f40`) foi
   **corretamente** discriminado: notas 2 em três dimensões e a flag
-  `customer_frustration`. Conclusão prática: para detecção de nuance, `gpt-4o` (ou
-  um dataset dourado que calibre o modelo menor) é o caminho — sem alterar
-  arquitetura, apenas configuração.
+  `customer_frustration`. Conclusão prática: para detecção de nuance, um modelo
+  maior (`gpt-5.6-terra`) (ou um dataset dourado que calibre o modelo menor) é o
+  caminho — sem alterar arquitetura, apenas configuração.
 - **Primeiro passo de calibração já entregue (`default@2`).** A tendência do juiz
   a colapsar as notas em ~3,5/4 (premiando a *ausência* de defeito) é atacada na
   v2 reescrevendo as âncoras: **3** vira a linha de base do atendente competente,
@@ -332,8 +335,9 @@ dourado.
   temperatura baixa, âncoras descritivas e escala curta (0–5); a recalibração de
   âncoras (`default@2`) já reduz a inflação, e a calibração plena exige o dataset
   dourado (futuro).
-- **Nuance no `gpt-4o-mini`.** Como observado, alucinação sutil pode não ser
-  sinalizada. Mitigação: `gpt-4o` por configuração e/ou dataset dourado.
+- **Nuance em modelos pequenos.** Como observado (com `gpt-4o-mini`), alucinação
+  sutil pode não ser sinalizada. Mitigação: modelo maior (`gpt-5.6-terra`) por
+  configuração e/ou dataset dourado.
 - **PII masking por regex é melhor-esforço.** Formatos não previstos podem
   escapar; NER é o próximo passo documentado. (Nota de projeto: como a PII é
   mascarada **antes** do LLM, a própria flag `sensitive_data_exposure` fica mais

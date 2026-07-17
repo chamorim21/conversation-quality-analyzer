@@ -7,7 +7,7 @@ describe('parseEnv', () => {
   it('loads with defaults when only the API key is provided', () => {
     const cfg = parseEnv(validSource);
     expect(cfg.OPENAI_API_KEY).toBe('sk-test-123');
-    expect(cfg.DEFAULT_MODEL).toBe('gpt-4o-mini');
+    expect(cfg.DEFAULT_MODEL).toBe('gpt-5.4-mini');
     expect(cfg.MAX_CONVERSATION_TOKENS).toBe(30_000);
     expect(cfg.LLM_MAX_CONCURRENCY).toBe(5);
     expect(cfg.PORT).toBe(3000);

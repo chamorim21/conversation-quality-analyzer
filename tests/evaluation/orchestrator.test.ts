@@ -72,7 +72,7 @@ describe('evaluateConversation', () => {
       client,
       rubric,
       conversation,
-      model: 'gpt-4o-mini',
+      model: 'gpt-5.4-mini',
     });
 
     expect(output.result.dimensions).toEqual([
@@ -107,7 +107,7 @@ describe('evaluateConversation', () => {
       client,
       rubric,
       conversation,
-      model: 'gpt-4o-mini',
+      model: 'gpt-5.4-mini',
     });
 
     expect(output.result.dimensions[1].score).toBeNull();
@@ -121,7 +121,7 @@ describe('evaluateConversation', () => {
       client,
       rubric,
       conversation,
-      model: 'gpt-4o-mini',
+      model: 'gpt-5.4-mini',
     });
 
     expect(output.promptVersion).toBe('v1');
@@ -145,7 +145,7 @@ describe('evaluateConversation', () => {
     });
 
     await expect(
-      evaluateConversation({ client, rubric, conversation, model: 'gpt-4o-mini' }),
+      evaluateConversation({ client, rubric, conversation, model: 'gpt-5.4-mini' }),
     ).rejects.toBeInstanceOf(z.ZodError);
   });
 });

@@ -54,7 +54,7 @@ npm run demo    # avalia conversas de exemplo contra uma API no ar
 
 Em `options` (opcional): `rubric` seleciona a rubrica de `rubrics/*.yaml` —
 `"default"` (versão mais recente) ou pinada, ex.: `"default@2"` — e `model`
-troca o modelo (`"gpt-4o-mini"` default, `"gpt-4o"`). Erros são explícitos:
+troca o modelo (`"gpt-5.4-mini"` default; ex.: `"gpt-5.6-terra"`). Erros são explícitos:
 `400` (schema inválido), `404` (rubrica desconhecida), `422` (conversa não
 avaliável), `502` (LLM falhou após retries), `500` (falha de auditoria).
 
@@ -91,7 +91,7 @@ curl -s http://localhost:3000/evaluations \
         { "role": "attendant", "content": "Boa noite! Podemos retomar sua orientação sobre pós-graduação agora? Fico à disposição para entender seus objetivos e ajudar na escolha do curso ideal, caso queira continuar." }
       ]
     },
-    "options": { "rubric": "default@2", "model": "gpt-4o-mini" }
+    "options": { "rubric": "default@2", "model": "gpt-5.4-mini" }
   }'
 ```
 
@@ -165,10 +165,10 @@ Note as notas baixas com evidências apontando as mensagens originais
     "rubricId": "default",
     "rubricVersion": 2,
     "promptVersion": "v1",
-    "model": "gpt-4o-mini",
+    "model": "gpt-5.4-mini",
     "tokensIn": 3162,
     "tokensOut": 674,
-    "costUsd": 0.0008787,
+    "costUsd": 0.0054045,
     "latencyMs": 17680,
     "truncated": false,
     "createdAt": "2026-07-14T19:54:03.252Z"
@@ -185,7 +185,7 @@ e rode a demo em outro:
 ```bash
 npm run demo -- --session S_5ee36f40          # uma sessão
 npm run demo                                  # todas as conversas
-npm run demo -- --rubric default@1 --model gpt-4o
+npm run demo -- --rubric default@1 --model gpt-5.6-terra
 ```
 
 Para cada conversa a demo imprime notas, flags, custo, latência e tokens.
