@@ -169,7 +169,7 @@ versão; **zero mudança de código**.
   (O `gpt-4o-mini`, padrão original do protótipo, foi aposentado pela OpenAI
   em 2026; a migração foi uma troca de configuração e uma re-medição.)
 - **Cálculo de custo transparente.** Uma tabela de preços por token
-  (`src/config/pricing.ts`) alimenta o custo estimado, persistido na auditoria e
+  (`src/config/models.ts`) alimenta o custo estimado, persistido na auditoria e
   exposto em `/metrics`.
 - **Números reais do protótipo** (lidos da auditoria sobre as **20 conversas do
   dataset**, com `gpt-5.4-mini` e `default@2`, em 2026-07-17):

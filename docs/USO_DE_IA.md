@@ -17,7 +17,7 @@ Para cada uso relevante registramos três pontos:
 
 - **Onde**: estrutura inicial do projeto (package.json, tsconfig, vitest),
   validação de variáveis de ambiente (`src/config/env.ts`), a tabela de preços
-  (`src/config/pricing.ts`), o logger estruturado
+  (`src/config/models.ts`), o logger estruturado
   (`src/observability/logger.ts`) e o esqueleto da documentação.
 - **Por quê**: montar uma base mínima, tipada e testável, com configuração
   validada em *fail-fast* e sem vazamento de segredos nos logs.
@@ -186,7 +186,7 @@ Para cada uso relevante registramos três pontos:
 
 ## Fase 11 — Migração de modelos e re-medição (2026-07-17)
 
-- **Onde**: `src/config/pricing.ts`, `src/config/env.ts`, testes, README e
+- **Onde**: `src/config/models.ts`, `src/config/env.ts`, testes, README e
   `docs/SOLUCAO.md`.
 - **Por quê**: a OpenAI aposentou a família `gpt-4o`; o padrão migrou para
   `gpt-5.4-mini` (com `gpt-5.6-terra` e `gpt-5.4-nano` na tabela de preços).
