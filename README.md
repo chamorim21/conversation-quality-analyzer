@@ -102,76 +102,87 @@ Note as notas baixas com evidências apontando as mensagens originais
 
 ```json
 {
-  "evaluationId": "bf449e19-0e6f-46e6-9ccc-ce4ca9bcd216",
+  "evaluationId": "1593ecd8-5737-464e-a1b9-cfbb1e5d25f0",
   "dimensions": [
     {
       "dimensionId": "communication",
       "score": 2,
-      "justification": "A comunicação do atendente apresenta falhas relevantes, como a repetição de perguntas já respondidas e um tom que não se adapta à frustração do cliente. O atendente não demonstra clareza e concisão, resultando em uma conversa confusa.",
+      "justification": "A comunicação é compreensível, mas há redundância e tom pouco adaptado ao fluxo da conversa. O atendente repete a mesma linha de questionamento várias vezes, mesmo após o cliente indicar que já respondeu e que não poderia aprofundar a conversa.",
       "evidence": [
-        { "messageIndex": 3, "quote": "o que te levou a buscar uma licenciatura neste momento?" },
-        { "messageIndex": 7, "quote": "Você está buscando uma pós-graduação em uma área específica ou interessado em migrar para outra área?" },
-        { "messageIndex": 14, "quote": "Só para ter certeza, você está interessado em uma pós-graduação em alguma área específica ou deseja migrar de área?" }
+        { "messageIndex": 3, "quote": "Entendi, você tem interesse em Licenciatura. Gostaria de entender um pouco mais sobre seus objetivos profissionais para te orientar melhor: o que te levou a buscar uma licenciatura neste momento?" },
+        { "messageIndex": 7, "quote": "Obrigado! Só para confirmar, você está buscando uma pós-graduação em uma área específica ou interessado em migrar para outra área?" },
+        { "messageIndex": 14, "quote": "Recebi suas mensagens sim! Só para ter certeza, você está interessado em uma pós-graduação em alguma área específica ou deseja migrar de área?" }
       ]
     },
     {
       "dimensionId": "contextual_understanding",
       "score": 1,
-      "justification": "O atendente ignora a correção do cliente sobre já ter uma licenciatura e continua a fazer perguntas que já foram respondidas, demonstrando falta de compreensão do contexto da conversa.",
+      "justification": "Há falha clara de acompanhamento do contexto: o cliente corrige que não quer licenciatura, diz que já respondeu e informa que não poderá aprofundar a conversa, mas o atendente continua repetindo perguntas já respondidas e não incorpora adequadamente essas correções.",
       "evidence": [
         { "messageIndex": 4, "quote": "Não eu não tenho interesse em licenciatura eu tenho licenciatura em filosofia" },
+        { "messageIndex": 5, "quote": "Entendi, obrigado pelo esclarecimento. Você está buscando uma pós-graduação em alguma área específica ou pensando em mudar de área?" },
         { "messageIndex": 6, "quote": "Respondi a pergunta" },
-        { "messageIndex": 11, "quote": "Vc não viu as mensagens" }
+        { "messageIndex": 7, "quote": "Obrigado! Só para confirmar, você está buscando uma pós-graduação em uma área específica ou interessado em migrar para outra área?" },
+        { "messageIndex": 8, "quote": "Mas agora já está tarde e não poderei aprofundar a conversa" },
+        { "messageIndex": 14, "quote": "Recebi suas mensagens sim! Só para ter certeza, você está interessado em uma pós-graduação em alguma área específica ou deseja migrar de área?" }
       ]
     },
     {
       "dimensionId": "compliance_accuracy",
       "score": 3,
-      "justification": "O atendente não viola regras de negócio, mas também não demonstra cuidado além do mínimo. As informações fornecidas estão dentro do esperado, mas não há evidência de manejo cuidadoso.",
+      "justification": "Não há violação explícita de regra de negócio nem invenção de fatos observável. O atendente mantém a conversa dentro do tema de orientação de pós-graduação e não expõe dados sensíveis além do nome informado pelo próprio cliente.",
       "evidence": [
-        { "messageIndex": 2, "quote": "consultora de carreira da +A Code Academy." },
-        { "messageIndex": 10, "quote": "Podemos continuar quando for melhor para você." }
+        { "messageIndex": 2, "quote": "Olá, Pessoa_018, eu sou a Beatriz, consultora de carreira da +A Code Academy." },
+        { "messageIndex": 10, "quote": "Sem problemas, podemos continuar quando for melhor para você. Prefere agendar um horário para retomarmos a conversa?" }
       ]
     },
     {
       "dimensionId": "resolution",
-      "score": 1,
-      "justification": "A conversa não avança em direção ao objetivo do cliente, que é discutir a pós-graduação. O cliente expressa frustração e decide encerrar a conversa sem que suas necessidades tenham sido atendidas.",
+      "score": 2,
+      "justification": "A conversa não avança de forma efetiva para o objetivo do cliente. Embora haja tentativa de retomar e agendar, o atendente não aproveita as informações já dadas nem respeita a indisponibilidade do cliente, mantendo perguntas repetidas sem encaminhamento concreto.",
       "evidence": [
         { "messageIndex": 8, "quote": "Mas agora já está tarde e não poderei aprofundar a conversa" },
-        { "messageIndex": 9, "quote": "Retorno noutra ocasião" },
-        { "messageIndex": 12, "quote": "Fique à vontade para retornar quando quiser continuar a conversa sobre sua pós-graduação." }
+        { "messageIndex": 10, "quote": "Sem problemas, podemos continuar quando for melhor para você. Prefere agendar um horário para retomarmos a conversa?" },
+        { "messageIndex": 14, "quote": "Recebi suas mensagens sim! Só para ter certeza, você está interessado em uma pós-graduação em alguma área específica ou deseja migrar de área?" }
       ]
     }
   ],
-  "overallScore": 1.75,
+  "overallScore": 2,
   "flags": [
-    { "flagId": "hallucination", "triggered": false, "justification": "", "evidence": [] },
-    { "flagId": "sensitive_data_exposure", "triggered": false, "justification": "", "evidence": [] },
+    { "flagId": "hallucination", "triggered": false, "justification": "Não há afirmações factuais claramente inventadas ou números/prazos/promessas não sustentados pela conversa.", "evidence": [] },
+    {
+      "flagId": "sensitive_data_exposure",
+      "triggered": false,
+      "justification": "O único dado pessoal visível é o nome/identificador fornecido pelo próprio cliente, usado na saudação sem exposição indevida adicional.",
+      "evidence": [
+        { "messageIndex": 0, "quote": "Eu sou Pessoa_018" },
+        { "messageIndex": 2, "quote": "Olá, Pessoa_018, eu sou a Beatriz, consultora de carreira da +A Code Academy." }
+      ]
+    },
     {
       "flagId": "customer_frustration",
       "triggered": true,
-      "justification": "O cliente expressa frustração ao afirmar que o atendente não leu suas mensagens e decide encerrar a conversa.",
+      "justification": "O cliente demonstra irritação e sensação de não ter sido ouvido, com reclamações explícitas sobre a leitura das mensagens.",
       "evidence": [
-        { "messageIndex": 11, "quote": "Vc não viu as mensagens" },
-        { "messageIndex": 8, "quote": "Mas agora já está tarde e não poderei aprofundar a conversa" }
+        { "messageIndex": 6, "quote": "Respondi a pergunta" },
+        { "messageIndex": 11, "quote": "Vc não viu as mensagens" }
       ]
     },
-    { "flagId": "business_rule_violation", "triggered": false, "justification": "", "evidence": [] }
+    { "flagId": "business_rule_violation", "triggered": false, "justification": "Não há evidência de violação explícita de regra de negócio na conversa.", "evidence": [] }
   ],
-  "summary": "A conversa apresenta falhas significativas na comunicação e compreensão contextual, com o atendente repetindo perguntas já respondidas e não adaptando seu tom à frustração do cliente. A resolução da necessidade do cliente não é alcançada, resultando em insatisfação.",
+  "summary": "O atendimento foi compreensível, mas pouco adaptado ao contexto e repetitivo. O principal problema foi a baixa compreensão contextual: o cliente corrigiu que não queria licenciatura, disse que já havia respondido e informou que não poderia continuar, mas o atendente insistiu nas mesmas perguntas. Não houve violação clara de regra nem exposição sensível indevida, porém a conversa avançou pouco e gerou frustração no cliente.",
   "metadata": {
-    "evaluationId": "bf449e19-0e6f-46e6-9ccc-ce4ca9bcd216",
+    "evaluationId": "1593ecd8-5737-464e-a1b9-cfbb1e5d25f0",
     "rubricId": "default",
     "rubricVersion": 2,
     "promptVersion": "v1",
     "model": "gpt-5.4-mini",
-    "tokensIn": 3162,
-    "tokensOut": 674,
-    "costUsd": 0.0054045,
-    "latencyMs": 17680,
+    "tokensIn": 3159,
+    "tokensOut": 1066,
+    "costUsd": 0.007166,
+    "latencyMs": 5810,
     "truncated": false,
-    "createdAt": "2026-07-14T19:54:03.252Z"
+    "createdAt": "2026-07-17T13:13:34.115Z"
   }
 }
 ```

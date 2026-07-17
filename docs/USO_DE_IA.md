@@ -184,6 +184,27 @@ Para cada uso relevante registramos três pontos:
 
 ---
 
+## Fase 11 — Migração de modelos e re-medição (2026-07-17)
+
+- **Onde**: `src/config/pricing.ts`, `src/config/env.ts`, testes, README e
+  `docs/SOLUCAO.md`.
+- **Por quê**: a OpenAI aposentou a família `gpt-4o`; o padrão migrou para
+  `gpt-5.4-mini` (com `gpt-5.6-terra` e `gpt-5.4-nano` na tabela de preços).
+  Os números citados nos documentos foram re-medidos no modelo novo.
+- **Como foi validado**: a suíte completa (122 testes, sem chave) e o typecheck
+  passaram após a troca; em seguida, **execução real na OpenAI sobre as 20
+  conversas do dataset** (`npm run demo`, `default@2`): 20/20 avaliadas, custo
+  médio ≈ US$0,0069/avaliação (total US$0,137), tokens médios ≈ 3.332 → 967,
+  latência p50 ≈ 6,0 s / p95 ≈ 7,5 s — números relidos da trilha de auditoria
+  no SQLite. Observação de calibração: a alucinação sutil de `S_84b564f9`, que
+  o `gpt-4o-mini` consistentemente não sinalizava, **passou a disparar** a flag
+  `hallucination` no `gpt-5.4-mini` (3 disparos no dataset), e a distribuição
+  de notas ficou mais discriminada (communication deixou de travar em 4). Os
+  números de fases anteriores foram mantidos como registro histórico do modelo
+  antigo.
+
+---
+
 # Como a IA foi usada — em resumo
 
 - **Assistente**: um assistente de código com IA (Claude Code) foi usado ao longo

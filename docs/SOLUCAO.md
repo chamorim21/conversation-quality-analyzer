@@ -167,28 +167,31 @@ versão; **zero mudança de código**.
   (**`gpt-5.6-terra`**) ou mais barato (**`gpt-5.4-nano`**) configurável por
   requisição (`options.model`) ou por ambiente. A troca é de um parâmetro.
   (O `gpt-4o-mini`, padrão original do protótipo, foi aposentado pela OpenAI
-  em 2026; os números medidos abaixo são dele.)
+  em 2026; a migração foi uma troca de configuração e uma re-medição.)
 - **Cálculo de custo transparente.** Uma tabela de preços por token
   (`src/config/pricing.ts`) alimenta o custo estimado, persistido na auditoria e
   exposto em `/metrics`.
-- **Números reais do protótipo** (lidos de `GET /metrics` sobre as 4 conversas de
-  sanidade da SPEC, com `gpt-4o-mini`):
+- **Números reais do protótipo** (lidos da auditoria sobre as **20 conversas do
+  dataset**, com `gpt-5.4-mini` e `default@2`, em 2026-07-17):
 
   | Métrica | Valor |
   |---|---|
-  | Custo médio por avaliação | **US$ 0,00083** (~US$ 0,0008) |
-  | Tokens (média in → out) | ~2.868 → ~667 |
-  | Latência p50 / p95 | **11,2 s / 17,2 s** |
-  | Distribuição de notas (**default@1**) | Comunicação/Contexto/Resolutividade média 3,5; Compliance 4 |
-  | Flags disparadas | `customer_frustration` (1 — o caso de loop) |
+  | Custo médio por avaliação | **US$ 0,0069** (20 conversas: US$ 0,137) |
+  | Tokens (média in → out) | ~3.332 → ~967 |
+  | Latência p50 / p95 | **6,0 s / 7,5 s** |
+  | Distribuição de notas (**default@2**) | Médias: Comunicação 3,5 · Contexto 3,2 · Compliance 3,5 · Resolutividade 3,45; overall médio 3,41 (min 2, max 4,25) |
+  | Flags disparadas | `hallucination` (3) · `customer_frustration` (3, incl. o caso de loop) |
 
 - **Observação de calibração (real).** No caso `S_84b564f9` (possível alucinação
-  "curso mais procurado"), o `gpt-4o-mini` **não** disparou a flag `hallucination`
-  para uma afirmação sutil e sem suporte. Já o caso de loop (`S_5ee36f40`) foi
-  **corretamente** discriminado: notas 2 em três dimensões e a flag
-  `customer_frustration`. Conclusão prática: para detecção de nuance, um modelo
-  maior (`gpt-5.6-terra`) (ou um dataset dourado que calibre o modelo menor) é o
-  caminho — sem alterar arquitetura, apenas configuração.
+  "curso mais procurado"), o `gpt-4o-mini` **não** disparava a flag
+  `hallucination` para uma afirmação sutil e sem suporte — limitação registrada
+  do modelo antigo. Na re-medição com o `gpt-5.4-mini`, a flag **passou a
+  disparar** nesse mesmo caso (e em outros 2 do dataset), e a distribuição de
+  notas ficou mais discriminada (communication deixou de travar em 4). O caso de
+  loop (`S_5ee36f40`) segue **corretamente** discriminado: notas baixas e a flag
+  `customer_frustration`. Conclusão prática mantida: nuance depende do modelo
+  juiz, e a validação disso é um dataset dourado — sem alterar arquitetura,
+  apenas configuração.
 - **Primeiro passo de calibração já entregue (`default@2`).** A tendência do juiz
   a colapsar as notas em ~3,5/4 (premiando a *ausência* de defeito) é atacada na
   v2 reescrevendo as âncoras: **3** vira a linha de base do atendente competente,
@@ -239,16 +242,16 @@ mais estreito e específico.
 | Critério | A — Single-call (implementada) | B — Multi-agente (analisada) |
 |---|---|---|
 | Qualidade em casos sutis | Boa; nuance depende do modelo | Potencialmente melhor (especialização + revisão) |
-| Custo por avaliação | **~US$ 0,0008** (medido) | **~US$ 0,003–0,005** (estimado, 4–6×) |
-| Latência | **~11–17 s** (medido) | ~20–35 s (estimado, ~2×) |
+| Custo por avaliação | **~US$ 0,007** (medido) | **~US$ 0,028–0,042** (estimado, 4–6×) |
+| Latência | **~6–7,5 s** (medido) | ~12–15 s (estimado, ~2×) |
 | Complexidade | Baixa (uma função) | Alta (orquestração, estado, N prompts) |
 | Auditabilidade | Simples (1 prompt/1 resposta) | Mais difícil (N traços por avaliação) |
 | Escalabilidade | Excelente (stateless, 1 chamada) | Pior (N× chamadas pressionam a cota) |
 
 **Estimativa de custo da Abordagem B.** Com 4 avaliadores + 1 juiz, a conversa é
 enviada ~5 vezes (cada avaliador vê o texto todo), então o custo de **input**
-multiplica por ~5 e há ~5 respostas. Partindo dos ~2.868 tokens de input medidos,
-o custo por avaliação sobe para a faixa de **US$ 0,003–0,005** (4–6× o
+multiplica por ~5 e há ~5 respostas. Partindo dos ~3.332 tokens de input medidos,
+o custo por avaliação sobe para a faixa de **US$ 0,028–0,042** (4–6× o
 single-call), e a latência aproximadamente dobra (avaliadores em paralelo + juiz
 sequencial). Os números exatos dependem do tamanho dos prompts de cada agente.
 
@@ -276,14 +279,18 @@ dourado.
 
 ## 8. Viabilidade econômica
 
-- **Custo por avaliação medido: ~US$ 0,0008.** Extrapolando (apenas o custo de
-  LLM, `gpt-4o-mini`):
+- **Custo por avaliação medido: ~US$ 0,0069.** Extrapolando (apenas o custo de
+  LLM, `gpt-5.4-mini`):
 
   | Volume | Custo estimado de LLM |
   |---|---|
-  | 100 avaliações/dia | ~US$ 0,08/dia |
-  | 1.000 avaliações/dia | ~US$ 0,83/dia (~US$ 25/mês) |
-  | 100.000 avaliações/dia | ~US$ 83/dia |
+  | 100 avaliações/dia | ~US$ 0,69/dia |
+  | 1.000 avaliações/dia | ~US$ 6,90/dia (~US$ 206/mês) |
+  | 100.000 avaliações/dia | ~US$ 685/dia |
+
+  Se custo dominar a decisão, o `gpt-5.4-nano` (US$ 0,20/1,25 por 1M tokens)
+  recupera o patamar anterior (~US$ 0,0019/avaliação estimado) — a troca é um
+  parâmetro, e o dataset dourado diria o que se perde de nuance.
 
   Mesmo em volumes altos, o custo de LLM é ordens de grandeza menor do que o de
   avaliação manual por analistas — o que sustenta a proposta de rodar a análise
@@ -335,9 +342,10 @@ dourado.
   temperatura baixa, âncoras descritivas e escala curta (0–5); a recalibração de
   âncoras (`default@2`) já reduz a inflação, e a calibração plena exige o dataset
   dourado (futuro).
-- **Nuance em modelos pequenos.** Como observado (com `gpt-4o-mini`), alucinação
-  sutil pode não ser sinalizada. Mitigação: modelo maior (`gpt-5.6-terra`) por
-  configuração e/ou dataset dourado.
+- **Nuance em modelos pequenos.** Com o `gpt-4o-mini`, alucinação sutil não era
+  sinalizada; o `gpt-5.4-mini` passou a detectá-la no dataset de exemplo, mas o
+  risco permanece por princípio em modelos pequenos. Mitigação: modelo maior
+  (`gpt-5.6-terra`) por configuração e/ou dataset dourado.
 - **PII masking por regex é melhor-esforço.** Formatos não previstos podem
   escapar; NER é o próximo passo documentado. (Nota de projeto: como a PII é
   mascarada **antes** do LLM, a própria flag `sensitive_data_exposure` fica mais
